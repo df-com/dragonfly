@@ -335,9 +335,6 @@ ASALocalRun/
 
 *.dll
 *.txt
-*.vcxproj
-*.vcxproj.filters
 *.csproj
 Properties/
 App.config
-*.sln
