@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\ind">
+      <UniqueIdentifier>{f3b10f2f-a2dd-4b51-83f6-b73c9ddc6bad}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="candlestick.pb.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="candlesticks_generated.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pbsqlite_copied.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ASticks.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="base.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Candlestick.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Chart.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Config.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ContractSpec.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Time.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dragonfly.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="candlestick.pb.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ind\ind.cppm">
+      <Filter>Source Files\ind</Filter>
+    </ClCompile>
+    <ClCompile Include="ind\tech.cppm">
+      <Filter>Source Files\ind</Filter>
+    </ClCompile>
+    <ClCompile Include="ind\KDJ.cppm">
+      <Filter>Source Files\ind</Filter>
+    </ClCompile>
+    <ClCompile Include="ind\WR.cppm">
+      <Filter>Source Files\ind</Filter>
+    </ClCompile>
+    <ClCompile Include="ind\MACD.cppm">
+      <Filter>Source Files\ind</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

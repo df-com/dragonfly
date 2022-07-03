@@ -1,3 +1,4 @@
+// License: MIT License   See LICENSE.txt for the full license.
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -6,11 +7,9 @@
 #include "candlesticks_generated.h"
 #include "candlestick.pb.h"
 
-//#include "base.h"
-//#include "DFTime.h"
 export module dragonfly:Candlestick;
 import :base;
-import :DFTime;
+import :Time;
 
 export namespace dragonfly {
 
@@ -122,8 +121,7 @@ inline std::vector<float> Amplitudes(const std::vector<Candlestick>& sticks) {
 	ret.resize(sticks.size());
 	for (size_t i = 0; i < sticks.size(); i++) {
 		KNode k(sticks, i);
-		ret[i] = k.amplitude();
-		//ret[i] = sticks[i].amplitude();
+		ret[i] = (float)k.amplitude();
 	}
 	return std::move(ret);
 }
@@ -134,16 +132,12 @@ inline Candlestick Combine(const std::vector<Candlestick>& sticks, int beginI, i
 	Candlestick ret = sticks[beginI];
 	ret.mutate_close(sticks[endI].close());
 	ret.mutate_datetime(sticks[endI].datetime());
-	//ret.close() = sticks[endI].close();
-	//ret.datetime() = sticks[endI].datetime();
 	for (int i = beginI + 1; i <= endI; i++) {
 		if (ret.high() < sticks[i].high()) {
 			ret.mutate_high(sticks[i].high());
-			//ret.high() = sticks[i].high();
 		}
 		if (ret.low() > sticks[i].low()) {
 			ret.mutate_low(sticks[i].low());
-			//ret.low() = sticks[i].low();
 		}
 		ret.mutate_volume(ret.volume() + sticks[i].volume());
 	}
@@ -209,6 +203,32 @@ inline bool AreSame(const std::vector<Candlestick>& sticks1, const std::vector<C
 		return false;
 	for (int i = 0; i < sticks1.size(); i++) {
 		if (!AreSame(sticks1[i], sticks2[i]))
+			return false;
+	}
+	return true;
+}
+
+inline bool equal(const Candlestick& stick1, const Candlestick& stick2, float price_error_percent, double volume_error_percent) {
+	if (stick1.datetime() != stick2.datetime())
+		return false;
+	if (std::abs(stick1.open() - stick2.open()) > price_error_percent * stick1.open())
+		return false;
+	if (std::abs(stick1.high() - stick2.high()) > price_error_percent * stick1.open())
+		return false;
+	if (std::abs(stick1.low() - stick2.low()) > price_error_percent * stick1.open())
+		return false;
+	if (std::abs(stick1.close() - stick2.close()) > price_error_percent * stick1.open())
+		return false;
+	if (std::abs(stick1.volume() - stick2.volume()) > volume_error_percent * stick1.volume())
+		return false;
+	return true;
+}
+
+inline bool equal(const std::vector<Candlestick>& sticks1, const std::vector<Candlestick>& sticks2, float price_error_percent, double volume_error_percent) {
+	if (sticks1.size() != sticks2.size())
+		return false;
+	for (int i = 0; i < sticks1.size(); i++) {
+		if (!equal(sticks1[i], sticks2[i], price_error_percent, volume_error_percent))
 			return false;
 	}
 	return true;
