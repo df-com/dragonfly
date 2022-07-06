@@ -10,11 +10,14 @@ C++ 20(modules) 期货/期指 图表分析库
 
 ### 使用
 ```c++
-// AU D1 数据自动下载 本地自动持久化
+import dragonfly;
+namespace df = dragonfly;
+
+// 直接使用 dragonfly会自动下载数据, 自动存储到本地
 df::Chart chart("AU", df::Period::D1, system_clock::now() - std::chrono::days(30), system_clock::now());
 
 // 指标
-std::cout << chart.macd(12, 26, 9);
+chart.macd(12, 26, 9);
 chart.kdj(9, 3, 3);
 chart.rsi(6);
 ```
