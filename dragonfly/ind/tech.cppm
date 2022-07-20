@@ -55,6 +55,15 @@ inline std::vector<T> TrimmedMA(const std::vector<T>& data, int n, int trim) {
 	return std::move(ret);
 }
 
+//float MA(const std::vector<float>& data, std::vector<float>::const_iterator pos, unsigned int n) {
+//	return std::accumulate(pos - n, pos, 0.0) / n;
+//}
+
+template<typename T, typename Iter = typename std::vector<T>::const_iterator>
+T MA(const std::vector<T>& data, Iter pos, unsigned int n) {
+	return std::accumulate(pos - n, pos + 1, 0.0) / n;
+}
+
 template<typename T>
 inline std::vector<T> MA(const std::vector<T>& data, unsigned int n) {
 	std::vector<T> ret;

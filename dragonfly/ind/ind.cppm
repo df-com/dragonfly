@@ -13,6 +13,7 @@ export module dragonfly.ind;
 export import :tech;
 export import :KDJ;
 export import :MACD;
+export import :RUMI;
 export import :WR;
 
 export namespace dragonfly::ind {

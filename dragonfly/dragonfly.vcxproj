@@ -33,6 +33,7 @@
     <ClCompile Include="ContractSpec.cppm" />
     <ClCompile Include="ind\KDJ.cppm" />
     <ClCompile Include="ind\MACD.cppm" />
+    <ClCompile Include="ind\RUMI.cppm" />
     <ClCompile Include="ind\WR.cppm" />
     <ClCompile Include="Time.cppm" />
     <ClCompile Include="dragonfly.cppm" />

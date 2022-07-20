@@ -3,6 +3,8 @@
 #include <map>
 #include <cassert>
 #include <vector>
+#include <mutex>
+#include <fmt/format.h>
 #include <magic_enum.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <SQLiteCpp/Database.h>
@@ -20,6 +22,8 @@ using namespace dragonfly::ind;
 using time_point = std::chrono::system_clock::time_point;
 
 export namespace dragonfly {
+
+std::mutex g_mu;
 
 enum class Period {
 	M1, M5, M15, D1, Nil
@@ -44,10 +48,6 @@ protected:
 
 	Period period_;
 
-	std::vector<float> hs_;
-	std::vector<float> ls_;
-	std::vector<float> cs_;
-
 	std::vector<std::unique_ptr<CBL>> cbls_;
 	std::vector<std::unique_ptr<DMI_I>> dmis_;
 	std::vector<std::unique_ptr<BOLL>> bolls_;
@@ -63,9 +63,6 @@ public:
 	const InstrumentType instrument_type() const { return instrument_type_; }
 	Period period() const { return period_; }
 public:
-	const std::vector<float>& hs() const { return hs_; }
-	const std::vector<float>& ls() const { return ls_; }
-	const std::vector<float>& cs() const { return cs_; }
 	const std::vector<std::unique_ptr<BOLL>>& bolls() const { return bolls_; }
 	const std::vector<std::unique_ptr<KDJ>>& kdjs() const { return kdjs_; }
 	const std::vector<std::unique_ptr<WR>>& wrs() const { return wrs_; }
@@ -77,9 +74,6 @@ public:
 		this->period_ = period;
 		this->instrument_type_ = GetInstrumentTypeById(this->id());
 		loadData(Time(beginTime), Time(endTime));
-		hs_ = Hs(sticks());
-		ls_ = Ls(sticks());
-		cs_ = Cs(sticks());
 	}
 	void loadData(Time beginTime, Time endTime) {
 		std::string periodString = PeriodToString(period());
@@ -119,44 +113,14 @@ public:
 			downloader.ReplaceInto(db);
 			FetchFromSQLiteDatabase(dbpath, beginTime, endTime);
 		}
+		if (Config::instance().data_provider == DataProvider::Sohu && Config::instance().local_store_type == LocalStoreType::SQLite && instrument_type() == InstrumentType::ChineseStock) {
+			std::string url = fmt::format("http://q.stock.sohu.com/hisHq?code={0}&start={1}&end={2}", id(), beginTime.ToString("%Y%m%d"), endTime.ToString("%Y%m%d"));
+		}
 		return;
 	}
 	const KNode k(size_t i) const { return KNode(sticks(), i); }
 	const KNode k(const Time& t) const { return KNode(sticks(), GetIndex(t)); }
 	const KNode nearest_k(const Time& t) const { return KNode(sticks(), GetNearestIndex(t)); }
-	const BOLL& boll(int n, int p) {
-		std::vector<std::unique_ptr<BOLL>>::iterator it = std::find_if(bolls_.begin(), bolls_.end(), [&](const std::unique_ptr<BOLL>& v) {
-			return (v->n == n, v->p == p);
-			});
-		if (it == bolls_.end()) {
-			bolls_.push_back(std::unique_ptr<BOLL>(new BOLL(this->cs(), n, p)));
-			return *bolls_.back();
-		}
-		else
-			return **it;
-	}
-	const CBL* cbl(int n) {
-		std::vector<std::unique_ptr<CBL>>::iterator it = std::find_if(cbls_.begin(), cbls_.end(), [&](const std::unique_ptr<CBL>& v) {
-			return (v->CombineN == n);
-			});
-		if (it == cbls_.end()) {
-			cbls_.push_back(std::make_unique<CBL>(cs(), hs(), ls(), n));
-			return cbls_.back().get();
-		}
-		else
-			return (*it).get();
-	}
-	const DMI_I* dmi(int n1, int n2) {
-		std::vector<std::unique_ptr<DMI_I>>::iterator it = std::find_if(dmis_.begin(), dmis_.end(), [&](const std::unique_ptr<DMI_I>& v) {
-			return (v->n1 == n1 && v->n2 == n2);
-			});
-		if (it == dmis_.end()) {
-			dmis_.push_back(std::unique_ptr<DMI_I>(new DMI_I(cs(), hs(), ls(), n1, n2)));
-			return dmis_.back().get();
-		}
-		else
-			return (*it).get();
-	}
 	const WR* wrs_find(int n) const {
 		std::vector<std::unique_ptr<WR>>::const_iterator it = std::find_if(wrs_.begin(), wrs_.end(), [&](const std::unique_ptr<WR>& v) {
 			return (v->n == n);
@@ -167,71 +131,140 @@ public:
 		else
 			return (*it).get();
 	}
+	const BOLL& boll(int n, int p) {
+		g_mu.lock();
+		std::vector<std::unique_ptr<BOLL>>::iterator it = std::find_if(bolls_.begin(), bolls_.end(), [&](const std::unique_ptr<BOLL>& v) {
+			return (v->n == n, v->p == p);
+			});
+		if (it == bolls_.end()) {
+			bolls_.push_back(std::unique_ptr<BOLL>(new BOLL(Cs(sticks()), n, p)));
+			g_mu.unlock();
+			return *bolls_.back();
+		}
+		else {
+			g_mu.unlock();
+			return **it;
+		}
+	}
+	const CBL& cbl(int n) {
+		g_mu.lock();
+		std::vector<std::unique_ptr<CBL>>::iterator it = std::find_if(cbls_.begin(), cbls_.end(), [&](const std::unique_ptr<CBL>& v) {
+			return (v->CombineN == n);
+			});
+		if (it == cbls_.end()) {
+			cbls_.push_back(std::make_unique<CBL>(Cs(sticks()), Hs(sticks()), Ls(sticks()), n));
+			g_mu.unlock();
+			return *cbls_.back();
+		}
+		else {
+			g_mu.unlock();
+			return **it;
+		}
+	}
+	const DMI_I& dmi(int n1, int n2) {
+		g_mu.lock();
+		std::vector<std::unique_ptr<DMI_I>>::iterator it = std::find_if(dmis_.begin(), dmis_.end(), [&](const std::unique_ptr<DMI_I>& v) {
+			return (v->n1 == n1 && v->n2 == n2);
+			});
+		if (it == dmis_.end()) {
+			dmis_.push_back(std::unique_ptr<DMI_I>(new DMI_I(Cs(sticks()), Hs(sticks()), Ls(sticks()), n1, n2)));
+			g_mu.unlock();
+			return *dmis_.back();
+		}
+		else {
+			g_mu.unlock();
+			return **it;
+		}
+	}
 	const WR& wr(int n) {
+		g_mu.lock();
 		std::vector<std::unique_ptr<WR>>::iterator it = std::find_if(wrs_.begin(), wrs_.end(), [&](const std::unique_ptr<WR>& v) {
 			return (v->n == n);
 			});
 		if (it == wrs_.end()) {
-			wrs_.push_back(std::move(std::unique_ptr<WR>(new WR(hs(), ls(), cs(), n))));
+			wrs_.push_back(std::move(std::unique_ptr<WR>(new WR(Hs(sticks()), Ls(sticks()), Cs(sticks()), n))));
+			g_mu.unlock();
 			return *wrs_.back();
 		}
-		else
+		else {
+			g_mu.unlock();
 			return **it;
+		}
 	}
 	const KDJ& kdj(int n, int sn1, int sn2) {
+		g_mu.lock();
 		std::vector<std::unique_ptr<KDJ>>::iterator it = std::find_if(kdjs_.begin(), kdjs_.end(), [&](const std::unique_ptr<KDJ>& v) {
 			return (v->n() == n && v->sn1() == sn1 && v->sn2() == sn2);
 			});
 		if (it == kdjs_.end()) {
-			kdjs_.push_back(std::unique_ptr<KDJ>(new KDJ(cs(), hs(), ls(), n, sn1, sn2)));
+			kdjs_.push_back(std::unique_ptr<KDJ>(new KDJ(Cs(sticks()), Hs(sticks()), Ls(sticks()), n, sn1, sn2)));
+			g_mu.unlock();
 			return *kdjs_.back();
 		}
-		else
+		else {
+			g_mu.unlock();
 			return **it;
+		}
 	}
 	const MACD& macd(int shortN, int longN, int deaN) {
+		g_mu.lock();
 		std::vector<std::unique_ptr<MACD>>::iterator it = std::find_if(macds_.begin(), macds_.end(), [&](const std::unique_ptr<MACD>& v) {
 			return (v->short_n == shortN && v->long_n == longN && v->dea_n == deaN);
 			});
 		if (it == macds_.end()) {
 			macds_.push_back(std::make_unique<MACD>(Cs(sticks()), shortN, longN, deaN));
+			g_mu.unlock();
 			return *macds_.back();
 		}
-		else
+		else {
+			g_mu.unlock();
 			return **it;
+		}
 	}
 	const RSI& rsi(int n) {
+		g_mu.lock();
 		auto it = std::find_if(rsis_.begin(), rsis_.end(), [&](const std::unique_ptr<RSI>& v) {
 			return (v->n == n);
 			});
 		if (it == rsis_.end()) {
 			rsis_.push_back(std::make_unique<RSI>(Cs(sticks()), n));
+			g_mu.unlock();
 			return *rsis_.back();
 		}
-		else
+		else {
+			g_mu.unlock();
 			return **it;
+		}
 	}
 	const ind::MIKE& mike(int n) {
+		g_mu.lock();
 		std::vector<std::unique_ptr<ind::MIKE>>::iterator it = std::find_if(mikes_.begin(), mikes_.end(), [&](const std::unique_ptr<ind::MIKE>& v) {
 			return (v->n == n);
 			});
 		if (it == mikes_.end()) {
-			mikes_.push_back(std::unique_ptr<ind::MIKE>(new ind::MIKE(cs(), hs(), ls(), n)));
+			mikes_.push_back(std::unique_ptr<ind::MIKE>(new ind::MIKE(Cs(sticks()), Hs(sticks()), Ls(sticks()), n)));
+			g_mu.unlock();
 			return *mikes_.back();
 		}
-		else
+		else {
+			g_mu.unlock();
 			return **it;
+		}
 	}
-	const SAR* sar(double af_init, double af_delta, double af_max, int n) {
+	const SAR& sar(double af_init, double af_delta, double af_max, int n) {
+		g_mu.lock();
 		std::vector<std::unique_ptr<SAR>>::iterator it = std::find_if(sars_.begin(), sars_.end(), [&](const std::unique_ptr<SAR>& v) {
 			return v->IsParametersEqual(af_init, af_delta, af_max, n);
 			});
 		if (it == sars_.end()) {
-			sars_.push_back(std::make_unique<SAR>(cs(), hs(), ls(), af_init, af_delta, af_max, n));
-			return sars_.back().get();
+			sars_.push_back(std::make_unique<SAR>(Cs(sticks()), Hs(sticks()), Ls(sticks()), af_init, af_delta, af_max, n));
+			g_mu.unlock();
+			return *sars_.back();
 		}
-		else
-			return (*it).get();
+		else {
+			g_mu.unlock();
+			return **it;
+		}
 	}
 };
 
