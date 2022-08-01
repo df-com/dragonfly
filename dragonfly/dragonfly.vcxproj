@@ -24,6 +24,7 @@
     <ClInclude Include="pbsqlite_copied.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Account.cppm" />
     <ClCompile Include="ASticks.cppm" />
     <ClCompile Include="base.cppm" />
     <ClCompile Include="Candlestick.cppm" />

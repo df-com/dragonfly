@@ -74,5 +74,8 @@
     <ClCompile Include="ind\RUMI.cppm">
       <Filter>Source Files\ind</Filter>
     </ClCompile>
+    <ClCompile Include="Account.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

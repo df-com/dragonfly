@@ -10,6 +10,7 @@ export import :Candlestick;
 export import :Chart;
 export import :ContractSpec;
 export import :Time;
+export import :Account;
 
 export namespace dragonfly {
 
