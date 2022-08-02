@@ -22,3 +22,15 @@ chart.kdj(9, 3, 3);
 chart.rsi(6);
 // 更多指标请参考ind目录
 ```
+### 回测
+```c++
+using namespace experimental
+Account account;
+Position pos;
+pos.Open(Position::Long,chart,i,3232);
+pos.Close(i+12,3300);
+account.history.push_back(pos);
+std::cout << account.win_rate();
+std::cout << account.profit();
+std::cout << account.max_drawdown();
+```
