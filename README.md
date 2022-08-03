@@ -22,9 +22,15 @@ chart.kdj(9, 3, 3);
 chart.rsi(6);
 // 更多指标请参考ind目录
 ```
-### 回测
+合约信息
 ```c++
-using namespace experimental
+for (auto& spec : ContractSpec::instance().specs) {
+   spec.id; spec.contract_size;
+}
+```
+回测（experimental）
+```c++
+using namespace experimental;
 Account account;
 Position pos;
 pos.Open(Position::Long,chart,i,3232);
