@@ -8,6 +8,7 @@
 #include <magic_enum.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <SQLiteCpp/Database.h>
+#include "candlestick.pb.h"
 
 import dragonfly.ind;
 
