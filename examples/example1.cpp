@@ -8,7 +8,7 @@ namespace df = dragonfly;
 int main() {
 	// TraderScale提供期货主力次主力加权D1 M5(实时)数据 https://www.microsoft.com/store/apps/9N05WZK919MB 购买后输入token即可使用
 	df::Config::instance().data_provider = df::DataProvider::TraderScale;
-	df::Config::instance().data_provider_addrs.push_back("8.142.228.89");
+	df::Config::instance().data_provider_addrs.push_back("sv01.traderscale.tech");
 	df::Config::instance().token = "your token";
 
 	auto now = std::chrono::system_clock::now();
