@@ -32,9 +32,17 @@
     <ClCompile Include="Chart.cppm" />
     <ClCompile Include="Config.cppm" />
     <ClCompile Include="ContractSpec.cppm" />
+    <ClCompile Include="ind\ASI.cppm" />
+    <ClCompile Include="ind\BOLL.cppm" />
+    <ClCompile Include="ind\CBL.cppm" />
+    <ClCompile Include="ind\DMI.cppm" />
     <ClCompile Include="ind\KDJ.cppm" />
     <ClCompile Include="ind\MACD.cppm" />
+    <ClCompile Include="ind\MIKE.cppm" />
+    <ClCompile Include="ind\PSY.cppm" />
+    <ClCompile Include="ind\RSI.cppm" />
     <ClCompile Include="ind\RUMI.cppm" />
+    <ClCompile Include="ind\SAR.cppm" />
     <ClCompile Include="ind\WR.cppm" />
     <ClCompile Include="Time.cppm" />
     <ClCompile Include="dragonfly.cppm" />
