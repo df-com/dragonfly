@@ -1,5 +1,6 @@
 // License: MIT License   See LICENSE.txt for the full license.
 #include <iostream>
+#include <vector>
 #include <mutex>
 
 export module dragonfly:Config;
@@ -7,7 +8,7 @@ export module dragonfly:Config;
 export namespace dragonfly {
 
 enum class DataProvider {
-	/*GoogleFinace, Yahoo, TencentFinace, THS, TLD, Wind, Localhost, LAN,*/ Sina, Hexun, ArcData, TraderScale, Jin10, WenHua, Cffex, JoinQuant, None
+	/*GoogleFinace, Yahoo, TencentFinace, THS, TLD, Wind, Localhost, LAN,*/ Sina, Sohu, Hexun, ArcData, TraderScale, Jin10, WenHua, Cffex, JoinQuant, None
 };
 
 enum class LocalStoreType {
