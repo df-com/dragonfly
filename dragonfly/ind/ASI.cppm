@@ -54,6 +54,8 @@ struct ASI {
 			asi[i] = (float)(asi[i - 1] + si[i]);
 		}
 	}
+	const float at(int i) const { return asi[i]; }
+	const float operator[](int i) const { return at(i); }
 };
 
 }
