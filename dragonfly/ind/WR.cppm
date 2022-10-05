@@ -27,7 +27,7 @@ struct WR {
 		return (price - ll[dataI]) / (hh[dataI] - ll[dataI]);
 	}
 	float GetPriceByPos(int dataI, double pos) const {
-		return pos * (hh[dataI] - ll[dataI]) + ll[dataI];
+		return (float)(pos * (hh[dataI] - ll[dataI]) + ll[dataI]);
 	}
 	void init(const std::vector<float>& hs, const std::vector<float>& ls, const std::vector<float>& cs) {
 		if (cs.empty())
@@ -35,7 +35,7 @@ struct WR {
 		pos.resize(cs.size());
 		ll = LowValues(ls, n);
 		hh = HighValues(hs, n);
-		for (size_t i = 1; i < cs.size(); i++) {
+		for (int i = 1; i < cs.size(); i++) {
 			int beginI = i - n + 1;
 			beginI = std::max(0, beginI);
 			if (equal(ll[i], hh[i]) || equal(hh[i] - ll[i], float(0.0))) {
