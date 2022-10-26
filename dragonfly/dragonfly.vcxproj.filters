@@ -101,5 +101,8 @@
     <ClCompile Include="ind\CBL.cppm">
       <Filter>Source Files\ind</Filter>
     </ClCompile>
+    <ClCompile Include="ind\ATR.cppm">
+      <Filter>Source Files\ind</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

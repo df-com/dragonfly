@@ -12,6 +12,7 @@ export module dragonfly.ind;
 
 export import :tech;
 export import :ASI;
+export import :ATR;
 export import :BOLL;
 export import :CBL;
 export import :DMI;

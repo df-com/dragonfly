@@ -33,6 +33,7 @@
     <ClCompile Include="Config.cppm" />
     <ClCompile Include="ContractSpec.cppm" />
     <ClCompile Include="ind\ASI.cppm" />
+    <ClCompile Include="ind\ATR.cppm" />
     <ClCompile Include="ind\BOLL.cppm" />
     <ClCompile Include="ind\CBL.cppm" />
     <ClCompile Include="ind\DMI.cppm" />
