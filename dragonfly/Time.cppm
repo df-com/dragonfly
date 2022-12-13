@@ -184,11 +184,15 @@ struct TimeOnly {
 	int hour() const { return elapsed_in_minutes / 60; }
 	int minute() const { return elapsed_in_minutes % 60; }
 	void AddOneHour() { elapsed_in_minutes += 60; }
+	void AddMinutes(int n) { elapsed_in_minutes += n; }
 	inline bool operator==(const TimeOnly& rhs) const {
 		return this->elapsed_in_minutes == rhs.elapsed_in_minutes;
 	}
 	inline bool operator!=(const TimeOnly& rhs) const {
 		return this->elapsed_in_minutes != rhs.elapsed_in_minutes;
+	}
+	inline bool operator>(const TimeOnly& rhs) const {
+		return elapsed_in_minutes > rhs.elapsed_in_minutes;
 	}
 	inline bool operator<(const TimeOnly& rhs) const {
 		return elapsed_in_minutes < rhs.elapsed_in_minutes;
@@ -199,6 +203,8 @@ struct TimeOnly {
 	inline bool operator>=(const TimeOnly& rhs) const {
 		return elapsed_in_minutes >= rhs.elapsed_in_minutes;
 	}
+	static TimeOnly min() { return TimeOnly(0, 0); }
+	static TimeOnly max() { return TimeOnly(23, 59); }
 };
 
 inline Time min(const Time& t1, const Time& t2) {

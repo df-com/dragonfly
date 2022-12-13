@@ -104,5 +104,11 @@
     <ClCompile Include="ind\ATR.cppm">
       <Filter>Source Files\ind</Filter>
     </ClCompile>
+    <ClCompile Include="interval.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IntradayTimes.cppm">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

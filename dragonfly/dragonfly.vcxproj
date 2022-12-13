@@ -45,6 +45,8 @@
     <ClCompile Include="ind\RUMI.cppm" />
     <ClCompile Include="ind\SAR.cppm" />
     <ClCompile Include="ind\WR.cppm" />
+    <ClCompile Include="interval.cppm" />
+    <ClCompile Include="IntradayTimes.cppm" />
     <ClCompile Include="Time.cppm" />
     <ClCompile Include="dragonfly.cppm" />
     <ClCompile Include="ind\ind.cppm" />
