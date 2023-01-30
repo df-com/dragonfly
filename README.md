@@ -5,7 +5,7 @@ C++ 20(modules) 期货/期指 图表分析库
 - Windows 10/11.
 
 ### 安装
-- [安装 `vcpkg`](https://github.com/microsoft/vcpkg/releases/tag/2022.06.15)
+- [安装 `vcpkg`](https://github.com/microsoft/vcpkg/releases/tag/2023.01.09)
 - vcpkg install boost-filesystem boost-algorithm flatbuffers magic-enum spdlog SQLiteCpp protobuf cpp-httplib --triplet=x64-windows
 
 ### 使用
