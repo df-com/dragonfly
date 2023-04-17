@@ -9,6 +9,8 @@
 #include <string>
 #include <sstream>
 
+#include <boost/functional/hash.hpp>
+
 export module dragonfly:base;
 
 export namespace dragonfly {
@@ -123,6 +125,32 @@ void shuffle(std::vector<T>& arr1, std::vector<T2>& arr2) {
 		std::swap(arr1[i], arr1[rd]);
 		std::swap(arr2[i], arr2[rd]);
 	}
+}
+
+template<int N>
+std::size_t md5(const std::array<float, N>& data) {
+	std::size_t ret = std::hash<int>{}((int)(data[0] * 100000 + 0.5));
+	for (const auto& v : data) {
+		boost::hash_combine(ret, std::hash<int> {}((int)(v * 100000 + 0.5)));
+	}
+	return ret;
+}
+template<int N>
+std::size_t md5(const std::vector<std::array<float, N>>& data) {
+	if (data.empty()) return 0;
+	std::size_t ret = md5(data[0]);
+	for (const auto& v : data) {
+		boost::hash_combine(ret, md5(v));
+	}
+	return ret;
+}
+std::size_t md5(const std::vector<int>& data) {
+	if (data.empty()) return 0;
+	std::size_t ret = std::hash<int>{}(data[0]);
+	for (const auto& v : data) {
+		boost::hash_combine(ret, std::hash<int>{}(v));
+	}
+	return ret;
 }
 
 }
