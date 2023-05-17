@@ -12,9 +12,11 @@
 #ifdef DF_MYSQL_USING
 #include <mysqlx/xdevapi.h>
 #endif
-#include "candlesticks_generated.h"
+//#include "candlesticks_generated.h"
 #include "candlestick.pb.h"
 #include "pbsqlite_copied.h"
+
+import arc.Candlestick;
 
 export module dragonfly:ASticks;
 
@@ -202,6 +204,21 @@ inline std::vector<Candlestick> FetchSticksFromCSVContent(std::string csv, char 
 	return sticks;
 }
 
+std::vector<char> get_data(httplib::Client& cli, std::string url) {
+	std::vector<char> ret;
+	ret.reserve(1024 * 1024);
+	auto res = cli.Get(url.c_str(), [&](const char* data, size_t data_length) {
+		for (int i = 0; i < data_length; i++) {
+			ret.push_back(data[i]);
+		}
+	return true;
+		});
+	if (res != nullptr && res->status != 200) {
+		std::string data(ret.begin(), ret.end());
+		spdlog::error(std::to_string(res->status) + " " + res->reason + " " + data);
+	}
+	return ret;
+}
 
 class ASticks {
 protected:
@@ -246,18 +263,8 @@ public:
 					url = "/glx" + url;
 				url += "&token=" + Config::instance().token;
 
-				std::vector<char> buffer;
-				buffer.reserve(1000 * 1000);
-				auto res = cli.Get(url.c_str(), [&](const char* data, size_t data_length) {
-					for (int i = 0; i < data_length; i++) {
-						buffer.push_back(data[i]);
-					}
-					return true;
-					});
-				if (res != nullptr && res->status != 200) {
-					std::string data(buffer.begin(), buffer.end());
-					spdlog::error(std::to_string(res->status) + " " + res->reason + " " + data);
-				}
+				std::vector<char> buffer = get_data(cli, url);
+
 				if (!buffer.empty()) {
 					auto arcsticks = arc::GetCandlesticks(buffer.data());
 					this->sticks_.clear();
