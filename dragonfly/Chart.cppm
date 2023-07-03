@@ -59,6 +59,7 @@ protected:
 	std::vector<std::unique_ptr<WR>> wrs_;
 	std::vector<std::unique_ptr<SAR>> sars_;
 public:
+	void set_id(const std::string& v) { id_ = v; }
 	const std::string& id() const { return id_; }
 	const std::string& name() const { return name_; }
 	const InstrumentType instrument_type() const { return instrument_type_; }

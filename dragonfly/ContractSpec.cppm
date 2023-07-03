@@ -10,6 +10,7 @@ export module dragonfly:ContractSpec;
 
 import :Config;
 import :base;
+import :Time;
 
 export namespace dragonfly {
 
@@ -39,6 +40,11 @@ public:
 			spec.contract_size = std::stod(row[1]);
 			specs.push_back(spec);
 		}
+		std::sort(specs.begin(), specs.end(),
+			[](const Spec& a, const Spec& b) -> bool
+			{
+				return a.id < b.id;
+			});
 	}
 	Spec GetSpecById(const std::string& id) {
 		for (auto& s : specs) {
@@ -112,5 +118,17 @@ public:
 		return instance_;
 	}
 };
+
+Time GetServerTime() {
+	httplib::Client cli(Config::instance().data_provider_addr(), 15000);
+	std::string url = fmt::format("/time");
+
+	std::string content;
+	auto res = cli.Get(url.c_str(), [&](const char* data, size_t data_length) {
+		content.assign(data, data_length);
+	return true;
+		});
+	return Time(content);
+}
 
 }

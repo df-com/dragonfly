@@ -29,7 +29,7 @@ bool equal(T a, T b) {
 template<typename T> bool equal(T a, T b, T c) { return equal(a, b) && equal(b, c); }
 
 template<int N>
-inline bool equal(const std::array<float, N>& a, std::array<float, N>& b) {
+inline bool equal(const std::array<float, N>& a, const std::array<float, N>& b) {
 	for (int i = 0; i < a.size(); i++) {
 		if (!equal(a[i], b[i]))
 			return false;
