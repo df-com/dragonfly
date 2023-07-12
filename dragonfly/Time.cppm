@@ -33,7 +33,13 @@ public:
 	Time(const std::string& dateString) {
 		std::tm t = {};
 		std::istringstream ss(dateString);
-		ss >> std::get_time(&t, "%Y-%m-%d %H:%M");
+		std::string f1 = "2000-01-01 12:34";
+		std::string f2 = "2000-01-01 12:34:01";
+		if (f2.size() == dateString.size())
+			ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
+		else
+			ss >> std::get_time(&t, "%Y-%m-%d %H:%M");
+
 		this->epoch_ = mktime(&t);
 	}
 	Time(const std::string& dateString, const std::string& format) {
@@ -184,7 +190,7 @@ struct TimeOnly {
 	int hour() const { return elapsed_in_minutes / 60; }
 	int minute() const { return elapsed_in_minutes % 60; }
 	void AddOneHour() { elapsed_in_minutes += 60; }
-	void AddMinutes(int n) { elapsed_in_minutes += n; }
+	TimeOnly& AddMinutes(int n) { elapsed_in_minutes += n; return *this; }
 	inline bool operator==(const TimeOnly& rhs) const {
 		return this->elapsed_in_minutes == rhs.elapsed_in_minutes;
 	}
@@ -205,6 +211,10 @@ struct TimeOnly {
 	}
 	static TimeOnly min() { return TimeOnly(0, 0); }
 	static TimeOnly max() { return TimeOnly(23, 59); }
+	friend std::ostream& operator<<(std::ostream& os, const TimeOnly& myclass) {
+		os << myclass.hour() << ":" << myclass.minute();
+		return os;
+	}
 };
 
 inline Time min(const Time& t1, const Time& t2) {
