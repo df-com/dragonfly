@@ -8,8 +8,7 @@
 #include <limits>
 #include <string>
 #include <sstream>
-
-#include <boost/functional/hash.hpp>
+#include <functional>
 
 export module dragonfly:base;
 
@@ -127,11 +126,36 @@ void shuffle(std::vector<T>& arr1, std::vector<T2>& arr2) {
 	}
 }
 
+std::string to_upper_copy(const std::string& str) {
+	std::string upper_str;
+	for (char c : str) {
+		upper_str += toupper(c);
+	}
+	return upper_str;
+}
+
+bool icontains(const std::vector<std::string>& vec, const std::string& value) {
+	std::vector<std::string> upvec;
+	for (auto& v : vec) {
+		upvec.push_back(to_upper_copy(v));
+	}
+	std::string upvalue = to_upper_copy(value);
+	if (std::find(upvec.begin(), upvec.end(), upvalue) != upvec.end()) {
+		return true;
+	}
+	return false;
+}
+
+std::size_t hash_combine(std::size_t a, std::size_t b) {
+	auto temp = b + 0x9e3779b9 + (a << 6) + (a >> 2);
+	return (a ^ temp);
+}
+
 template<int N>
 std::size_t md5(const std::array<float, N>& data) {
 	std::size_t ret = std::hash<int>{}((int)(data[0] * 100000 + 0.5));
 	for (const auto& v : data) {
-		boost::hash_combine(ret, std::hash<int> {}((int)(v * 100000 + 0.5)));
+		hash_combine(ret, std::hash<int> {}((int)(v * 100000 + 0.5)));
 	}
 	return ret;
 }
@@ -140,7 +164,7 @@ std::size_t md5(const std::vector<std::array<float, N>>& data) {
 	if (data.empty()) return 0;
 	std::size_t ret = md5(data[0]);
 	for (const auto& v : data) {
-		boost::hash_combine(ret, md5(v));
+		hash_combine(ret, md5(v));
 	}
 	return ret;
 }
@@ -148,7 +172,7 @@ std::size_t md5(const std::vector<int>& data) {
 	if (data.empty()) return 0;
 	std::size_t ret = std::hash<int>{}(data[0]);
 	for (const auto& v : data) {
-		boost::hash_combine(ret, std::hash<int>{}(v));
+		ret = hash_combine(ret, v);
 	}
 	return ret;
 }
