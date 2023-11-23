@@ -6,9 +6,7 @@
 #include <cassert>
 #include <vector>
 
-#include <boost/algorithm/string.hpp>
 #include <httplib.h>
-#include <spdlog/spdlog.h>
 #ifdef DF_MYSQL_USING
 #include <mysqlx/xdevapi.h>
 #endif
@@ -24,6 +22,7 @@ import :Config;
 import :Candlestick;
 import :Time;
 import :base;
+import :log;
 
 export namespace dragonfly {
 
@@ -32,9 +31,9 @@ enum class InstrumentType {
 };
 
 inline int GetInsNumber(const std::string& id) {
-	std::string upperId = boost::to_upper_copy<std::string>(id);
+	std::string upperId = to_upper_copy(id);
 	if (id.rfind("r_", 0) == 0 || id.rfind("R_", 0) == 0) {
-		upperId = boost::to_upper_copy<std::string>(id.substr(2, id.length() - 2));
+		upperId = to_upper_copy(id.substr(2, id.length() - 2));
 	}
 	std::vector<std::string> ids = { "AU", "AP", "AG", "NI", "AL", "ZN", "PG", "SS", "SA", "EB", "EG", "SP", "V", "FU", "I", "RB", "RU", "BU", "JM", "J", "JD", "A", "C", "CF", "CS", "M", "MA", "ZC", "TA", "SR", "SM", "RM", "Y", "OI", "P", "PP", "HC", "L", "FG",
 									 "EURUSD", "GBPUSD", "USDJPY", "USDCAD", "USDCHF", "USDCNH", "AUDUSD", "NZDUSD", "USDOLLAR"
@@ -44,9 +43,9 @@ inline int GetInsNumber(const std::string& id) {
 }
 
 inline InstrumentType GetInstrumentTypeById(const std::string& id) {
-	std::string upperId = boost::to_upper_copy<std::string>(id);
+	std::string upperId = to_upper_copy(id);
 	if (id.rfind("r_", 0) == 0 || id.rfind("R_", 0) == 0) {
-		upperId = boost::to_upper_copy<std::string>(id.substr(2, id.length() - 2));
+		upperId = to_upper_copy(id.substr(2, id.length() - 2));
 	}
 	std::vector<std::string> cnFuturesIds = { "AU", "AP","CU", "AG", "NI", "AL", "ZN", "PG", "SS", "SA", "EB", "EG", "SP", "V", "FU", "I", "RB", "RU", "BU", "JM", "J", "JD", "A", "C", "CF", "CS", "M", "MA", "ZC", "TA", "SR", "SM", "RM", "Y", "OI", "P", "PP", "HC", "L", "FG","PB"
 	};
@@ -215,7 +214,7 @@ std::vector<char> get_data(httplib::Client& cli, std::string url) {
 		});
 	if (res != nullptr && res->status != 200) {
 		std::string data(ret.begin(), ret.end());
-		spdlog::error(std::to_string(res->status) + " " + res->reason + " " + data);
+		log::error(std::to_string(res->status) + " " + res->reason + " " + data);
 	}
 	return ret;
 }
@@ -274,15 +273,15 @@ public:
 					}
 				}
 				else {
-					spdlog::warn("FetchFromArcSever empty will retry");
+					log::warn("FetchFromArcSever empty will retry");
 					Sleep(3000);
 					continue;
 				}
 				return;
 			}
 			catch (const std::exception& e) {
-				spdlog::warn(e.what());
-				spdlog::warn("FetchFromArcSever retry");
+				log::warn(e.what());
+				log::warn("FetchFromArcSever retry");
 			}
 			Sleep(3000);
 		}
