@@ -1,12 +1,12 @@
 # dragonfly
-C++ 20(modules) 期货/期指 图表分析库
+C++ 期货/期指 图表分析库
 ### 系统要求:
-- Visual Studio 2022 Community
-- Windows 10/11.
+- Visual Studio >= 2022
+- Windows >= 10.
 
 ### 安装
 - [安装 `vcpkg`](https://github.com/microsoft/vcpkg/releases/tag/2023.12.12)
-- vcpkg install boost-filesystem boost-algorithm flatbuffers magic-enum spdlog SQLiteCpp protobuf cpp-httplib --triplet=x64-windows
+- vcpkg install boost-filesystem boost-algorithm flatbuffers magic-enum spdlog SQLiteCpp protobuf cpp-httplib
 
 ### 使用
 ```c++
