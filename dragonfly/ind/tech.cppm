@@ -48,16 +48,11 @@ inline std::vector<T> TrimmedMA(const std::vector<T>& data, int n, int trim) {
 		ret[i] /= (i + 1);
 	}
 	for (int i = n - 1; i < data.size(); i++) {
-		//std::cout << i << " ";
 		std::vector<T> sub = { data.begin() + i - n + 1, data.begin() + i + 1 };
 		ret[i] = trimmed_mean(sub, trim);
 	}
 	return std::move(ret);
 }
-
-//float MA(const std::vector<float>& data, std::vector<float>::const_iterator pos, unsigned int n) {
-//	return std::accumulate(pos - n, pos, 0.0) / n;
-//}
 
 template<typename T, typename Iter = typename std::vector<T>::const_iterator>
 T MA(const std::vector<T>& data, Iter pos, unsigned int n) {
@@ -285,7 +280,7 @@ std::vector<T> HighValues_Fast(const std::vector<T>& data, int n) {
 }
 
 template<typename T>
-std::vector<T> HighValues_Old(const std::vector<T>& data, int n) {
+std::vector<T> HighValues_Classical(const std::vector<T>& data, int n) {
 	std::vector<T> ret;
 	ret.resize(data.size());
 	for (int i = 0; i < data.size(); i++) {
@@ -327,7 +322,7 @@ std::vector<T> LowValues_Fast(const std::vector<T>& data, int n) {
 }
 
 template<typename T>
-std::vector<T> LowValues_Old(const std::vector<T>& data, int n) {
+std::vector<T> LowValues_Classical(const std::vector<T>& data, int n) {
 	std::vector<T> ret;
 	ret.resize(data.size());
 	for (int i = 0; i < data.size(); i++) {
