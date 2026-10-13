@@ -3,10 +3,11 @@ C++ 期货/期指 图表分析库
 ### 系统要求:
 - Visual Studio >= 2022
 - Windows >= 10.
+- vcpkg >= 2025.9
 
 ### 安装
-- [安装 `vcpkg`](https://github.com/microsoft/vcpkg/releases/tag/2023.12.12)
-- vcpkg install boost-filesystem boost-algorithm flatbuffers magic-enum spdlog SQLiteCpp protobuf cpp-httplib
+- [安装 `vcpkg`](https://github.com/microsoft/vcpkg/releases)
+- vcpkg install boost-filesystem boost-unordered boost-algorithm flatbuffers magic-enum spdlog SQLiteCpp protobuf cpp-httplib highway 
 
 ### 使用
 ```c++
