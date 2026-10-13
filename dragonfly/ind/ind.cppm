@@ -1,4 +1,5 @@
 // License: MIT License   See LICENSE.txt for the full license.
+module;
 #include <iostream>
 #include <numeric>
 #include <string>
@@ -11,138 +12,128 @@
 export module dragonfly.ind;
 
 export import :tech;
-//export import :ASI;
-//export import :ATR;
-//export import :BOLL;
-//export import :CBL;
-//export import :DMI;
-//export import :KDJ;
-//export import :MACD;
-//export import :MIKE;
-//export import :PSY;
-//export import :RSI;
-//export import :RUMI;
-//export import :SAR;
-//export import :WR;
 
 export namespace dragonfly::ind {
 
 struct ASI {
 	std::vector<float> asi;
+
 	ASI(const std::vector<float>& cs, const std::vector<float>& hs, const std::vector<float>& ls, const std::vector<float>& os) {
-		if (cs.empty())
-			return;
-		std::vector<double> si;
-		si.resize(cs.size());
-		asi.resize(cs.size());
-		si[0] = 0.0;
-		asi[0] = 0.0;
-		for (size_t i = 1; i < cs.size(); i++) {
-			double A = abs(hs[i] - cs[i - 1]);
-			double B = abs(ls[i] - cs[i - 1]);
-			double C = abs(hs[i] - ls[i - 1]);
-			double D = abs(cs[i - 1] - os[i - 1]);
-			double E = cs[i] - cs[i - 1];
-			double F = cs[i] - os[i];
-			double G = cs[i - 1] - os[i - 1];
-			double R;
-			if (A > B && A > C) {
-				R = A + B / 2 + D / 4;
+		const size_t sz = cs.size();
+		if (sz == 0) return;
+
+		asi.resize(sz, 0.0f);
+		std::vector<float> si(sz, 0.0f);
+
+		for (size_t i = 1; i < sz; ++i) {
+			if (hs[i] == ls[i] || cs[i - 1] == 0.0f) {
+				si[i] = 0.0f;
+				continue;
 			}
-			else if (B > A && B > C) {
-				R = B + A / 2 + D / 4;
-			}
-			else {
-				R = C + D / 4;
-			}
-			double X = E + F / 2 + G;
-			double K = A > B ? A : B;
-			double SI = 16 * X / R * K;
-			if (hs[i] == ls[i]) {
-				SI = 0.0;
-			}
+
+			const float A = std::abs(hs[i] - cs[i - 1]);
+			const float B = std::abs(ls[i] - cs[i - 1]);
+			const float C = std::abs(hs[i] - ls[i - 1]);
+			const float D = std::abs(cs[i - 1] - os[i - 1]);
+
+			float R;
+			if (A > B && A > C)      R = A + B * 0.5f + D * 0.25f;
+			else if (B > A && B > C) R = B + A * 0.5f + D * 0.25f;
+			else                     R = C + D * 0.25f;
+
+			if (R == 0.0f) continue;
+
+			const float E = cs[i] - cs[i - 1];
+			const float F = cs[i] - os[i];
+			const float G = cs[i - 1] - os[i - 1];
+			const float X = E + F * 0.5f + G;
+			const float K = (A > B) ? A : B;
+
+			const float SI = (16.0f * X / R) * K;
 			si[i] = SI / cs[i - 1];
 		}
-		for (size_t i = 1; i < cs.size(); i++) {
-			asi[i] = (float)(asi[i - 1] + si[i]);
+
+		for (size_t i = 1; i < sz; ++i) {
+			asi[i] = asi[i - 1] + si[i];
 		}
 	}
-	const float at(int i) const { return asi[i]; }
-	const float operator[](int i) const { return at(i); }
+
+	[[nodiscard]] inline float at(int i) const { return asi[i]; }
+	[[nodiscard]] inline float operator[](int i) const { return asi[i]; }
 };
 
 struct ATR {
 	int n;
 	std::vector<float> atr;
-	ATR(const std::vector<float>& hs, const std::vector<float>& ls, const std::vector<float>& cs, int n) {
-		this->n = n;
-		atr.resize(cs.size());
+
+	ATR(const std::vector<float>& hs, const std::vector<float>& ls, const std::vector<float>& cs, int n) : n(n) {
+		const size_t sz = cs.size();
+		if (sz == 0) return;
+
+		atr.resize(sz);
 		atr[0] = std::abs(hs[0] - ls[0]);
-		for (int i = 1; i < cs.size(); i++) {
-			auto a1 = std::abs((hs[i] - ls[i]) / cs[i - 1]);
-			auto a2 = std::abs((hs[i] - cs[i - 1]) / cs[i - 1]);
-			auto a3 = std::abs((ls[i] - cs[i - 1]) / cs[i - 1]);
-			atr[i] = std::max({ a1,a2,a3 });
+
+		for (size_t i = 1; i < sz; ++i) {
+			const float prev_c = cs[i - 1];
+			if (prev_c == 0.0f) {
+				atr[i] = 0.0f;
+				continue;
+			}
+			const float inv_prev_c = 1.0f / prev_c;
+			const float a1 = std::abs(hs[i] - ls[i]) * inv_prev_c;
+			const float a2 = std::abs(hs[i] - prev_c) * inv_prev_c;
+			const float a3 = std::abs(ls[i] - prev_c) * inv_prev_c;
+			atr[i] = std::max({ a1, a2, a3 });
 		}
 		atr = MA(atr, n);
 	}
-	const float at(int i) const { return atr[i]; }
-	const float operator[](int i) const { return at(i); }
+
+	[[nodiscard]] inline float at(int i) const { return atr[i]; }
+	[[nodiscard]] inline float operator[](int i) const { return atr[i]; }
 };
 
 struct BOLL {
 	int n;
 	int p;
-	std::vector<float> mid;
-	std::vector<float> upper;
-	std::vector<float> lower;
-	std::vector<float> width;
-	std::vector<float> pos;
-	BOLL(const std::vector<float>& cs, int n, int p) {
-		this->n = n;
-		this->p = p;
+	std::vector<float> mid, upper, lower, width, pos;
 
-		std::vector<float> sd;
-		sd.resize(cs.size());
-		upper.resize(cs.size());
-		lower.resize(cs.size());
-		width.resize(cs.size());
-		pos.resize(cs.size());
+	BOLL(const std::vector<float>& cs, int n, int p) : n(n), p(p) {
+		const size_t sz = cs.size();
+		if (sz == 0) return;
 
 		mid = MA(cs, n);
 
-		for (int i = 0; i < cs.size(); i++) {
-			sd[i] = (float)StandardDeviation(cs, i, n, mid[i]);
-		}
+		upper.resize(sz);
+		lower.resize(sz);
+		width.resize(sz);
+		pos.resize(sz);
 
-		for (int i = 0; i < cs.size(); i++) {
-			upper[i] = mid[i] + sd[i] * p;
-			lower[i] = mid[i] - sd[i] * p;
-			width[i] = upper[i] - lower[i];
-			pos[i] = (cs[i] - mid[i]) / (width[i] / 2);
+		for (size_t i = 0; i < sz; ++i) {
+			const float sd = static_cast<float>(StandardDeviation(cs, i, n, mid[i]));
+			const float offset = sd * static_cast<float>(p);
+
+			upper[i] = mid[i] + offset;
+			lower[i] = mid[i] - offset;
+			const float w = upper[i] - lower[i];
+			width[i] = w;
+
+			pos[i] = (w != 0.0f) ? ((cs[i] - mid[i]) * 2.0f / w) : 0.0f;
 		}
 	}
-	float width_in_percent(int dataI) const {
-		return width[dataI] / mid[dataI];
+
+	[[nodiscard]] inline float width_in_percent(int dataI) const {
+		return (mid[dataI] != 0.0f) ? (width[dataI] / mid[dataI]) : 0.0f;
 	}
-public:
-	static double division(double a, double b, double ifBZeroValue) {
-		if (equal(b, 0.0)) {
-			return ifBZeroValue;
-		}
-		return a / b;
+
+	static inline double division(double a, double b, double ifBZeroValue) {
+		return equal(b, 0.0) ? ifBZeroValue : (a / b);
 	}
 };
 
 struct CBL {
 	int CombineN;
-	std::vector<int>	trend;
-	std::vector<double>	pos;
-	std::vector<double>	Bar1Max;
-	std::vector<double>	Bar1;
-	std::vector<double>	Bar2;
-	std::vector<double>	Bar3;
-	std::vector<int>	Bar3Index;
+	std::vector<int>	trend, Bar3Index;
+	std::vector<double>	pos, Bar1Max, Bar1, Bar2, Bar3;
 
 	CBL(const std::vector<float>& cs, const std::vector<float>& hs, const std::vector<float>& ls, int combineN) {
 		this->CombineN = combineN;
@@ -315,10 +306,7 @@ private:
 
 struct DMI_I {
 	int n1, n2;
-	std::vector<float> di1;
-	std::vector<float> di2;
-	std::vector<float> adx;
-	std::vector<float> adxr;
+	std::vector<float> di1, di2, adx, adxr;
 	DMI_I(const std::vector<float>& cs, const std::vector<float>& hs, const std::vector<float>& ls, int n1, int n2) {
 		this->n1 = n1;
 		this->n2 = n2;
@@ -393,182 +381,200 @@ struct DMI_I {
 
 struct WR {
 	int n;
-	std::vector<float> pos; // 0.0-1.0
-	std::vector<float> ll;
-	std::vector<float> hh;
-	WR(const std::vector<float>& hs, const std::vector<float>& ls, const std::vector<float>& cs, int n) {
-		this->n = n;
+	std::vector<float> pos/*0.0-1.0*/, ll, hh;
+
+	WR(const std::vector<float>& hs, const std::vector<float>& ls, const std::vector<float>& cs, int n) : n(n) {
 		init(hs, ls, cs);
 	}
-	double GetPosByPrice(int dataI, double price) const {
-		return (price - ll[dataI]) / (hh[dataI] - ll[dataI]);
+
+	[[nodiscard]] inline double GetPosByPrice(int dataI, double price) const {
+		const double range = static_cast<double>(hh[dataI] - ll[dataI]);
+		return (range != 0.0) ? ((price - ll[dataI]) / range) : 0.0;
 	}
-	float GetPriceByPos(int dataI, double pos) const {
-		return (float)(pos * (hh[dataI] - ll[dataI]) + ll[dataI]);
+
+	[[nodiscard]] inline float GetPriceByPos(int dataI, double pos_val) const {
+		return static_cast<float>(pos_val * (hh[dataI] - ll[dataI]) + ll[dataI]);
 	}
+
+private:
 	void init(const std::vector<float>& hs, const std::vector<float>& ls, const std::vector<float>& cs) {
-		if (cs.empty())
-			return;
-		pos.resize(cs.size());
+		const size_t sz = cs.size();
+		if (sz == 0) return;
+
+		pos.assign(sz, 0.0f);
 		ll = LowValues(ls, n);
 		hh = HighValues(hs, n);
-		for (int i = 1; i < cs.size(); i++) {
-			if (equal(ll[i], hh[i]) || equal(hh[i] - ll[i], float(0.0))) {
-				continue;
+
+		for (size_t i = 1; i < sz; ++i) {
+			const float range = hh[i] - ll[i];
+			if (range > 1e-6f) {
+				pos[i] = (cs[i] - ll[i]) / range;
 			}
-			pos[i] = (cs[i] - ll[i]) / (hh[i] - ll[i]);
 		}
 	}
 };
 
 struct CWR {
 	int n;
-	std::vector<float> pos; // 0.0-1.0
-	std::vector<float> ll;
-	std::vector<float> hh;
-	std::vector<float> amps;
-	CWR(const std::vector<float>& cs, int n) {
-		this->n = n;
+	std::vector<float> pos, ll, hh, amps;
+
+	CWR(const std::vector<float>& cs, int n) : n(n) {
 		init(cs);
 	}
-	double GetPosByPrice(int dataI, double price) const {
-		return (price - ll[dataI]) / (hh[dataI] - ll[dataI]);
+
+	[[nodiscard]] inline double GetPosByPrice(int dataI, double price) const {
+		const double range = static_cast<double>(hh[dataI] - ll[dataI]);
+		return (range != 0.0) ? ((price - ll[dataI]) / range) : 0.0;
 	}
-	float GetPriceByPos(int dataI, double pos) const {
-		return (float)(pos * (hh[dataI] - ll[dataI]) + ll[dataI]);
+
+	[[nodiscard]] inline float GetPriceByPos(int dataI, double pos_val) const {
+		return static_cast<float>(pos_val * (hh[dataI] - ll[dataI]) + ll[dataI]);
 	}
+
+private:
 	void init(const std::vector<float>& cs) {
-		if (cs.empty())
-			return;
-		pos.resize(cs.size());
+		const size_t sz = cs.size();
+		if (sz == 0) return;
+
+		pos.assign(sz, 0.0f);
+		amps.assign(sz, 0.0f);
 		ll = LowValues(cs, n);
 		hh = HighValues(cs, n);
-		amps.resize(cs.size());
-		for (int i = 1; i < cs.size(); i++) {
-			if (equal(ll[i], hh[i]) || equal(hh[i] - ll[i], float(0.0))) {
-				continue;
+
+		for (size_t i = 1; i < sz; ++i) {
+			const float range = hh[i] - ll[i];
+			if (range > 1e-6f && ll[i] != 0.0f) {
+				pos[i] = (cs[i] - ll[i]) / range;
+				amps[i] = range / ll[i];
 			}
-			pos[i] = (cs[i] - ll[i]) / (hh[i] - ll[i]);
-			amps[i] = (hh[i] - ll[i]) / ll[i];
 		}
 	}
 };
 
 struct KDJ {
 private:
-	int n_;
-	int sn1_;
-	int sn2_;
+	int n_, sn1_, sn2_;
 public:
-	std::vector<float> K;
-	std::vector<float> D;
-	std::vector<float> J;
-public:
-	int n() const { return n_; }
-	int sn1() const { return sn1_; }
-	int sn2() const { return sn2_; }
-	KDJ(const std::vector<float>& cs, const std::vector<float>& hs, const std::vector<float>& ls, int n, int sn1, int sn2) {
-		this->n_ = n;
-		this->sn1_ = sn1;
-		this->sn2_ = sn2;
+	std::vector<float> K, D, J;
+
+	[[nodiscard]] inline int n() const { return n_; }
+	[[nodiscard]] inline int sn1() const { return sn1_; }
+	[[nodiscard]] inline int sn2() const { return sn2_; }
+
+	KDJ(const std::vector<float>& cs, const std::vector<float>& hs, const std::vector<float>& ls, int n, int sn1, int sn2)
+		: n_(n), sn1_(sn1), sn2_(sn2) {
+		const size_t sz = cs.size();
+		if (sz == 0) return;
+
 		WR wr(hs, ls, cs, n);
-		std::vector<float> pos = wr.pos;
-		for (auto& p : pos) {
-			if (std::isnan(p) || std::isinf(p))
-				p = 0.5;
-			p *= 100;
+		std::vector<float>& pos = wr.pos;
+
+		for (size_t i = 0; i < sz; ++i) {
+			if (std::isnan(pos[i]) || std::isinf(pos[i])) pos[i] = 0.5f;
+			pos[i] *= 100.0f;
 		}
+
 		K = SMA(pos, sn1, 1);
 		D = SMA(K, sn2, 1);
-		J.resize(cs.size());
-		for (int i = 0; i < cs.size(); i++) {
-			J[i] = K[i] * 3 - D[i] * 2;
+
+		J.resize(sz);
+		for (size_t i = 0; i < sz; ++i) {
+			J[i] = K[i] * 3.0f - D[i] * 2.0f;
 		}
 	}
 };
 
 struct MACD {
-	int short_n;
-	int long_n;
-	int dea_n;
-	std::vector<float> diff;
-	std::vector<float> dea;
-	std::vector<float> bar;
-	MACD(const std::vector<float>& cs, int short_n, int long_n, int dea_n) {
-		this->short_n = short_n;
-		this->long_n = long_n;
-		this->dea_n = dea_n;
-		auto shortEMA = EMA(cs, short_n);
-		auto longEMA = EMA(cs, long_n);
-		diff.resize(cs.size());
-		bar.resize(cs.size());
-		for (int i = 0; i < cs.size(); i++) { diff[i] = shortEMA[i] - longEMA[i]; }
+	int short_n, long_n, dea_n;
+	std::vector<float> diff, dea, bar;
+
+	MACD(const std::vector<float>& cs, int short_n, int long_n, int dea_n)
+		: short_n(short_n), long_n(long_n), dea_n(dea_n) {
+		const size_t sz = cs.size();
+		if (sz == 0) return;
+
+		const auto shortEMA = EMA(cs, short_n);
+		const auto longEMA = EMA(cs, long_n);
+
+		diff.resize(sz);
+		bar.resize(sz);
+
+		for (size_t i = 0; i < sz; ++i) {
+			diff[i] = shortEMA[i] - longEMA[i];
+		}
+
 		dea = EMA(diff, dea_n);
-		for (int i = 0; i < cs.size(); i++) { bar[i] = (diff[i] - dea[i]) * 2; }
-		for (int i = 0; i < cs.size(); i++) {
-			diff[i] /= cs[i];
-			bar[i] /= cs[i];
-			dea[i] /= cs[i];
+
+		for (size_t i = 0; i < sz; ++i) {
+			bar[i] = (diff[i] - dea[i]) * 2.0f;
+			if (cs[i] != 0.0f) {
+				const float inv_c = 1.0f / cs[i];
+				diff[i] *= inv_c;
+				bar[i] *= inv_c;
+				dea[i] *= inv_c;
+			}
 		}
 	}
 };
 
 struct MIKE {
 	int n;
-	std::vector<double> anchor;
-	std::vector<double> resist1;
-	std::vector<double> resist2;
-	std::vector<double> resist3;
-	std::vector<double> support1;
-	std::vector<double> support2;
-	std::vector<double> support3;
-	std::vector<double> pos;
-public:
+	std::vector<double> anchor, resist1, resist2, resist3, support1, support2, support3, pos;
+
 	MIKE(const std::vector<float>& cs, const std::vector<float>& hs, const std::vector<float>& ls, int n) {
 		init(cs, hs, ls, n);
 	}
 	MIKE(const std::vector<double>& cs, const std::vector<double>& hs, const std::vector<double>& ls, int n) {
 		init(cs, hs, ls, n);
 	}
+
 private:
 	template<typename T>
-	void init(const std::vector<T>& cs, const std::vector<T>& hs, const std::vector<T>& ls, int n) {
-		this->n = n;
-		this->anchor.resize(cs.size());
-		this->resist1.resize(cs.size());
-		this->resist2.resize(cs.size());
-		this->resist3.resize(cs.size());
-		this->support1.resize(cs.size());
-		this->support2.resize(cs.size());
-		this->support3.resize(cs.size());
-		this->pos.resize(cs.size());
+	void init(const std::vector<T>& cs, const std::vector<T>& hs, const std::vector<T>& ls, int n_val) {
+		this->n = n_val;
+		const size_t sz = cs.size();
+		if (sz == 0) return;
 
-		std::vector<double> HHs;
-		std::vector<double> LLs;
-		std::vector<double> HLCs;
-		HHs.resize(cs.size());
-		LLs.resize(cs.size());
-		HLCs.resize(cs.size());
-		for (size_t i = 0; i < cs.size(); i++) {
-			HLCs[i] = (hs[i] + ls[i] + cs[i]) / 3.0;
-			int beginI = i - n + 1;
-			beginI = std::max(0, beginI);
-			LLs[i] = *std::min_element(ls.begin() + beginI, std::min(ls.begin() + i + 1, ls.end()));
-			HHs[i] = *std::max_element(hs.begin() + beginI, std::min(hs.begin() + i + 1, hs.end()));
+		anchor.resize(sz);
+		resist1.resize(sz); resist2.resize(sz); resist3.resize(sz);
+		support1.resize(sz); support2.resize(sz); support3.resize(sz);
+
+		std::vector<double> HHs(sz), LLs(sz), HLCs(sz);
+
+		for (size_t i = 0; i < sz; ++i) {
+			HLCs[i] = static_cast<double>(hs[i] + ls[i] + cs[i]) / 3.0;
 		}
+
+		for (size_t i = 0; i < sz; ++i) {
+			const size_t beginI = (i >= static_cast<size_t>(n)) ? (i - n + 1) : 0;
+			T max_h = hs[beginI], min_l = ls[beginI];
+			for (size_t j = beginI + 1; j <= i; ++j) {
+				if (hs[j] > max_h) max_h = hs[j];
+				if (ls[j] < min_l) min_l = ls[j];
+			}
+			HHs[i] = static_cast<double>(max_h);
+			LLs[i] = static_cast<double>(min_l);
+		}
+
 		auto maHLCs = MA(HLCs, n);
 		this->anchor = REF(maHLCs, 1);
 		auto hv = EMA(HHs, 3);
 		auto lv = EMA(LLs, 3);
 
-		for (size_t i = n - 1; i < cs.size(); i++) {
-			this->resist1[i] = this->anchor[i] + this->anchor[i] - lv[i];
-			this->resist2[i] = this->anchor[i] + hv[i] - lv[i];
-			this->resist3[i] = 2.0 * hv[i] - lv[i];
-			this->support1[i] = this->anchor[i] - (hv[i] - this->anchor[i]);
-			this->support2[i] = this->anchor[i] - (hv[i] - lv[i]);
-			this->support3[i] = 2.0 * lv[i] - hv[i];
+		const size_t start_idx = (n > 0) ? (n - 1) : 0;
+		for (size_t i = start_idx; i < sz; ++i) {
+			const double anc = this->anchor[i];
+			const double h_val = hv[i];
+			const double l_val = lv[i];
+
+			this->resist1[i] = anc * 2.0 - l_val;
+			this->resist2[i] = anc + h_val - l_val;
+			this->resist3[i] = h_val * 2.0 - l_val;
+			this->support1[i] = anc * 2.0 - h_val;
+			this->support2[i] = anc - (h_val - l_val);
+			this->support3[i] = l_val * 2.0 - h_val;
 		}
+
 		this->resist3 = EMA(this->resist3, 3);
 		this->resist2 = EMA(this->resist2, 3);
 		this->resist1 = EMA(this->resist1, 3);
@@ -576,129 +582,103 @@ private:
 		this->support2 = EMA(this->support2, 3);
 		this->support3 = EMA(this->support3, 3);
 
-		this->pos = getMikePosList(this->anchor,
-			this->resist1, this->resist2, this->resist3,
-			this->support1, this->support2, this->support3, cs, n);
+		this->pos = getMikePosList(cs, start_idx);
 	}
-	double getPos(double a, double lower, double upper) {
-		if (lower >= upper) {
-			assert(false);
-		}
-		double ret = (a - lower) / (upper - lower);
-		return ret;
+
+	[[nodiscard]] inline static double getPos(double a, double lower, double upper) {
+		const double range = upper - lower;
+		return (range != 0.0) ? ((a - lower) / range) : 0.0;
 	}
-	double getMikePos(double anchor, double resist1, double resist2, double resist3,
-		double support1, double support2, double support3, double values) {
-		if (values > resist3) {
-			if (equal(resist3, resist2)) {
-				return 4.0;
+
+	template<typename U>
+	std::vector<double> getMikePosList(const std::vector<U>& values, size_t start_idx) {
+		const size_t sz = anchor.size();
+		std::vector<double> res(sz, 0.0);
+
+		for (size_t i = start_idx; i < sz; ++i) {
+			const double val = static_cast<double>(values[i]);
+			const double anc = anchor[i], r1 = resist1[i], r2 = resist2[i], r3 = resist3[i];
+			const double s1 = support1[i], s2 = support2[i], s3 = support3[i];
+
+			if (val > r3) {
+				res[i] = equal(r3, r2) ? 4.0 : (3.0 + (val - r3) / (r3 - r2));
 			}
-			double ret = 3.0 + (values - resist3) / (resist3 - resist2);
-			return ret;
-		}
-		else if (values > resist2) {
-			double ret = 2.0 + getPos(values, resist2, resist3);
-			return ret;
-		}
-		else if (values > resist1) {
-			double ret = 1.0 + getPos(values, resist1, resist2);
-			return ret;
-		}
-		else if (values > anchor) {
-			double ret = getPos(values, anchor, resist1);
-			return ret;
-		}
-		else if (values > support1) {
-			double ret = (getPos(values, support1, anchor) - 1.0);
-			return ret;
-		}
-		else if (values > support2) {
-			double ret = -1.0 + (getPos(values, support2, support1) - 1.0);
-			return ret;
-		}
-		else if (values > support3) {
-			double ret = -2.0 - (getPos(values, support3, support2) - 1.0);
-			return ret;
-		}
-		else {
-			if (equal(support2, support3)) {
-				return -4.0;
+			else if (val > r2) {
+				res[i] = 2.0 + getPos(val, r2, r3);
 			}
-			double ret = -3.0 + (values - support3) / (support2 - support3);
-			return ret;
+			else if (val > r1) {
+				res[i] = 1.0 + getPos(val, r1, r2);
+			}
+			else if (val > anc) {
+				res[i] = getPos(val, anc, r1);
+			}
+			else if (val > s1) {
+				res[i] = getPos(val, s1, anc) - 1.0;
+			}
+			else if (val > s2) {
+				res[i] = -1.0 + (getPos(val, s2, s1) - 1.0);
+			}
+			else if (val > s3) {
+				res[i] = -2.0 - (getPos(val, s3, s2) - 1.0);
+			}
+			else {
+				res[i] = equal(s2, s3) ? -4.0 : (-3.0 + (val - s3) / (s2 - s3));
+			}
 		}
-		assert(false);
-		return 0.0;
-	}
-	template<typename T, typename U>
-	std::vector<double> getMikePosList(const std::vector<T>& anchor,
-		const std::vector<T>& resist1, const std::vector<T>& resist2, const std::vector<T>& resist3,
-		const std::vector<T>& support1, const std::vector<T>& support2, const std::vector<T>& support3,
-		const std::vector<U>& values, int n) {
-		std::vector<double> ret;
-		ret.resize(anchor.size());
-		for (size_t i = n - 1; i < anchor.size(); i++) {
-			ret[i] = getMikePos(anchor[i], resist1[i], resist2[i], resist3[i], support1[i], support2[i], support3[i], values[i]);
-		}
-		return std::move(ret);
+		return res;
 	}
 };
 
 struct PSY {
 	int n;
 	std::vector<float> psy;
-	PSY(const std::vector<float>& a, const std::vector<float>& b, int n) {
+
+	PSY(const std::vector<float>& a, const std::vector<float>& b, int n) : n(n) {
 		assert(a.size() == b.size());
-		psy.resize(a.size());
-		this->n = n;
-		for (int i = n + 1; i < a.size(); i++) {
-			psy[i] = (float)(static_cast<double>(countUp(a, b, i - n + 1, i)) / n * 100);
-		}
-	}
-	int countUp(const std::vector<float>& a, const std::vector<float>& b, int beginI, int endI) {
-		int ret = 0;
-		for (int i = beginI; i <= endI; i++) {
-			if (a[i] < b[i]) {
+		const size_t sz = a.size();
+		psy.resize(sz, 0.0f);
+
+		const float inv_n = 100.0f / static_cast<float>(n);
+		for (size_t i = static_cast<size_t>(n) + 1; i < sz; ++i) {
+			int up_count = 0;
+			const size_t start = i - static_cast<size_t>(n) + 1;
+			for (size_t j = start; j <= i; ++j) {
+				if (a[j] >= b[j]) ++up_count;
 			}
-			else {
-				ret++;
-			}
+			psy[i] = static_cast<float>(up_count) * inv_n;
 		}
-		return ret;
 	}
 };
 
 struct RSI {
 	int n;
 	std::vector<float> rsi;
-	RSI(const std::vector<float>& arr, int n) {
-		this->n = n;
-		std::vector<float> ups;
-		std::vector<float> downs;
-		ups.resize(arr.size());
-		downs.resize(arr.size());
-		rsi.resize(arr.size());
-		ups[0] = 0.0;
-		downs[0] = 0.0;
-		rsi[0] = 50.0;
-		for (int i = 1; i < arr.size(); i++) {
-			float lc = arr[i - 1];
-			ups[i] = std::max(arr[i] - lc, float(0.0));
-			downs[i] = std::abs(arr[i] - lc);
+
+	RSI(const std::vector<float>& arr, int n) : n(n) {
+		const size_t sz = arr.size();
+		if (sz == 0) return;
+
+		std::vector<float> ups(sz, 0.0f), downs(sz, 0.0f);
+		rsi.assign(sz, 50.0f);
+
+		for (size_t i = 1; i < sz; ++i) {
+			const float diff = arr[i] - arr[i - 1];
+			ups[i] = std::max(diff, 0.0f);
+			downs[i] = std::abs(diff);
 		}
-		auto upsma = SMA(ups, n, 1);
-		auto downsma = SMA(downs, n, 1);
-		for (int i = 1; i < arr.size(); i++) {
-			if (equal(downsma[i], float(0.0))) {
-				rsi[i] = 50.0;
-			}
-			else {
-				rsi[i] = upsma[i] / downsma[i] * 100;
+
+		const auto upsma = SMA(ups, n, 1);
+		const auto downsma = SMA(downs, n, 1);
+
+		for (size_t i = 1; i < sz; ++i) {
+			if (!equal(downsma[i], 0.0f)) {
+				rsi[i] = (upsma[i] / downsma[i]) * 100.0f;
 			}
 		}
 	}
-	const float at(int i) const { return rsi[i]; }
-	const float operator[](int i) const { return at(i); }
+
+	[[nodiscard]] inline float at(int i) const { return rsi[i]; }
+	[[nodiscard]] inline float operator[](int i) const { return rsi[i]; }
 };
 
 struct RUMI {

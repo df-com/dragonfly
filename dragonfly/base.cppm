@@ -1,4 +1,5 @@
 // License: MIT License   See LICENSE.txt for the full license.
+module;
 #include <iostream>
 #include <vector>
 #include <iomanip>
@@ -6,6 +7,9 @@
 #include <algorithm>
 #include <numeric>
 #include <limits>
+#include <span>
+#include <cmath>
+#include <cstdint>
 #include <string>
 #include <sstream>
 #include <functional>
@@ -20,6 +24,13 @@ inline bool nearly_equal(float a, float b, float abs_error) { return fabs(a - b)
 inline bool nearly_equal(double a, double b, double abs_error) { return fabs(a - b) < abs_error; }
 
 template<typename T>
+T accumulate(const std::vector<T>& values) {
+	T sum = T{};
+	for (const auto& value : values) { sum += value; }
+	return sum;
+}
+
+template<typename T>
 bool equal(T a, T b) {
 	if constexpr (std::is_floating_point<T>::value) { return std::fabs(a - b) <= std::numeric_limits<T>::epsilon(); }
 	else return a == b;
@@ -27,8 +38,8 @@ bool equal(T a, T b) {
 
 template<typename T> bool equal(T a, T b, T c) { return equal(a, b) && equal(b, c); }
 
-template<int N>
-inline bool equal(const std::array<float, N>& a, const std::array<float, N>& b) {
+template<size_t N>
+bool equal(const std::array<float, N>& a, const std::array<float, N>& b) {
 	for (int i = 0; i < a.size(); i++) {
 		if (!equal(a[i], b[i]))
 			return false;
@@ -36,13 +47,25 @@ inline bool equal(const std::array<float, N>& a, const std::array<float, N>& b) 
 	return true;
 }
 
-template<int N>
-inline bool equal(const std::vector<std::array<float, N>>& a, const std::vector<std::array<float, N>>& b) {
+template<size_t N>
+bool equal(const std::vector<std::array<float, N>>& a, const std::vector<std::array<float, N>>& b) {
 	for (int i = 0; i < a.size(); i++) {
 		if (!equal(a[i], b[i]))
 			return false;
 	}
 	return true;
+}
+
+bool equal(const std::vector<int>& v1, const std::vector<int>& v2) { return (v1.size() == v2.size() && std::equal(v1.begin(), v1.end(), v2.begin())); }
+
+int round_to_nearest(int number, int multiple) {
+	int remainder = number % multiple;
+	if (remainder >= multiple / 2) {
+		return number + multiple - remainder;
+	}
+	else {
+		return number - remainder;
+	}
 }
 
 template<typename T, std::size_t... Ns>
@@ -54,14 +77,14 @@ auto concatenate(const std::array<T, Ns>&... arrays) {
 }
 
 template<int PRECISION>
-inline std::string round_to_string(float value) {
-	std::ostringstream ss;
+std::string round_to_string(float value) {
+	std::stringstream ss;
 	ss << std::fixed << std::setprecision(PRECISION) << value;
 	return ss.str();
 }
 
 template<int PRECISION, int N1>
-inline std::string round_to_string(const std::array<float, N1>& values, const std::string& sep) {
+std::string round_to_string(const std::array<float, N1>& values, const std::string& sep) {
 	std::string ret;
 	for (int i = 0; i < values.size() - 1; i++) {
 		ret += round_to_string<PRECISION>(values[i]);
@@ -71,7 +94,7 @@ inline std::string round_to_string(const std::array<float, N1>& values, const st
 	return ret;
 }
 
-inline std::vector<std::vector<std::string>> get_cvs_rows(std::istream& ss, char delim) {
+std::vector<std::vector<std::string>> get_cvs_rows(std::istream& ss, char delim) {
 	std::vector<std::vector<std::string>>   rows;
 	std::string                line;
 	while (std::getline(ss, line)) {
@@ -146,33 +169,38 @@ bool icontains(const std::vector<std::string>& vec, const std::string& value) {
 	return false;
 }
 
-std::size_t hash_combine(std::size_t a, std::size_t b) {
-	auto temp = b + 0x9e3779b9 + (a << 6) + (a >> 2);
-	return (a ^ temp);
+template <class T>
+inline void hash_combine(std::size_t& seed, const T& v) {
+	std::hash<T> hasher;
+	seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
-template<int N>
-std::size_t md5(const std::array<float, N>& data) {
-	std::size_t ret = std::hash<int>{}((int)(data[0] * 100000 + 0.5));
+inline std::size_t fast_hash_value(float v) { return std::hash<int>{}(static_cast<int>(v * 100000.0f + 0.5f)); }
+inline std::size_t fast_hash_value(double v) { return std::hash<int>{}(static_cast<int>(v * 100000000.0 + 0.5)); }
+inline std::size_t fast_hash_value(int v) {return std::hash<int>{}(v);}
+inline std::size_t fast_hash_value(int64_t v) {return std::hash<int64_t>{}(v);}
+
+template<typename T, size_t N>
+std::size_t fast_hash(const std::array<T, N>& data) {
+	std::size_t ret = 0;
 	for (const auto& v : data) {
-		hash_combine(ret, std::hash<int> {}((int)(v * 100000 + 0.5)));
+		hash_combine(ret, fast_hash_value(v));
 	}
 	return ret;
 }
-template<int N>
-std::size_t md5(const std::vector<std::array<float, N>>& data) {
-	if (data.empty()) return 0;
-	std::size_t ret = md5(data[0]);
+template<typename T>
+std::size_t fast_hash(const std::vector<T>& data) {
+	std::size_t ret = 0;
 	for (const auto& v : data) {
-		hash_combine(ret, md5(v));
+		hash_combine(ret, fast_hash_value(v));
 	}
 	return ret;
 }
-std::size_t md5(const std::vector<int>& data) {
-	if (data.empty()) return 0;
-	std::size_t ret = std::hash<int>{}(data[0]);
+template<typename T, size_t N>
+std::size_t fast_hash(const std::vector<std::array<T, N>>& data) {
+	std::size_t ret = 0;
 	for (const auto& v : data) {
-		ret = hash_combine(ret, v);
+		hash_combine(ret, fast_hash(v));
 	}
 	return ret;
 }

@@ -1,11 +1,17 @@
 // License: MIT License   See LICENSE.txt for the full license.
+module;
 #include <iostream>
 #include <vector>
 #include <chrono>
+#include <array>
+#include <map>
+#include <any>
 #include <assert.h>
 
-#include "candlesticks_generated.h"
-#include "candlestick.pb.h"
+//#include "candlesticks_generated.h"
+//#include "candlestick.pb.h"
+
+import arc.Candlestick;
 
 export module dragonfly:Candlestick;
 import :base;
@@ -14,6 +20,66 @@ import :Time;
 export namespace dragonfly {
 
 typedef arc::Candlestick Candlestick;
+
+//struct CandlestickM {
+//	enum class Field {
+//		datetime, open, high, low, close, volume
+//	};
+//	std::tuple<std::chrono::system_clock::time_point, float, float, float, float, double> fields;
+//	CandlestickM(const arc::Candlestick& rhs) {
+//		*this = rhs;
+//	}
+//	CandlestickM() {
+//		static_assert(magic_enum::enum_count<Field>() == std::tuple_size_v<decltype(fields)>);
+//	}
+//	auto& set_datetime(const auto& value) { std::get<(int)Field::datetime>(fields) = value; return *this; } auto& datetime() const { return std::get<(int)Field::datetime>(fields); }
+//	auto& set_open(const auto& value) { std::get<(int)Field::open>(fields) = value; return *this; } auto& open() const { return std::get<(int)Field::open>(fields); }
+//	auto& set_high(const auto& value) { std::get<(int)Field::high>(fields) = value; return *this; } auto& high() const { return std::get<(int)Field::high>(fields); }
+//	auto& set_low(const auto& value) { std::get<(int)Field::low>(fields) = value; return *this; } auto& low() const { return std::get<(int)Field::low>(fields); }
+//	auto& set_close(const auto& value) { std::get<(int)Field::close>(fields) = value; return *this; } auto& close() const { return std::get<(int)Field::close>(fields); }
+//	auto& set_volume(const auto& value) { std::get<(int)Field::volume>(fields) = value; return *this; } auto& volume() const { return std::get<(int)Field::volume>(fields); }
+//	CandlestickM& operator=(const arc::Candlestick& rhs) {
+//		this->set_datetime(std::chrono::system_clock::time_point(std::chrono::seconds(rhs.datetime()))).set_open(rhs.open()).set_high(rhs.high()).set_low(rhs.low()).set_close(rhs.close()).set_volume(rhs.volume());
+//		return *this;
+//	}
+//};
+
+struct CandlestickA {
+public:
+	std::chrono::system_clock::time_point datetime_;
+	float open_, high_, low_, close_;
+	double volume_;
+	auto& set_datetime(const auto& value) { datetime_ = value; return *this; } auto& datetime() const { return datetime_; }
+	auto& set_open(const auto& value) { open_ = value; return *this; } auto& open() const { return open_; }
+	auto& set_high(const auto& value) { high_ = value; return *this; } auto& high() const { return high_; }
+	auto& set_low(const auto& value) { low_ = value; return *this; } auto& low() const { return low_; }
+	auto& set_close(const auto& value) { close_ = value; return *this; } auto& close() const { return close_; }
+	auto& set_volume(const auto& value) { volume_ = value; return *this; } auto& volume() const { return volume_; }
+	void operator=(const arc::Candlestick& rhs) {
+		this->set_datetime(std::chrono::system_clock::time_point(std::chrono::seconds(rhs.datetime()))).set_open(rhs.open()).set_high(rhs.high()).set_low(rhs.low()).set_close(rhs.close()).set_volume(rhs.volume());
+	}
+	void operator=(const std::map<std::string, std::any>& obj) {
+		for (const auto& [key, any_value] : obj) {
+			if (key == "datetime") { if (any_value.type() == typeid(decltype(datetime_))) { datetime_ = std::any_cast<decltype(datetime_)>(any_value); } }
+			else if (key == "open") { if (any_value.type() == typeid(decltype(open_))) { open_ = std::any_cast<decltype(open_)>(any_value); } }
+			else if (key == "high") { if (any_value.type() == typeid(decltype(high_))) { high_ = std::any_cast<decltype(high_)>(any_value); } }
+			else if (key == "low") { if (any_value.type() == typeid(decltype(low_))) { low_ = std::any_cast<decltype(low_)>(any_value); } }
+			else if (key == "close") { if (any_value.type() == typeid(decltype(close_))) { close_ = std::any_cast<decltype(close_)>(any_value); } }
+			else if (key == "volume") { if (any_value.type() == typeid(decltype(volume_))) { volume_ = std::any_cast<decltype(volume_)>(any_value); } }
+		}
+	}
+	std::map<std::string, std::any> ToMA() const {
+		std::map<std::string, std::any> ret;
+		ret["datetime"] = datetime();
+		ret["open"] = open();
+		ret["high"] = high();
+		ret["low"] = low();
+		ret["close"] = close();
+		ret["volume"] = volume();
+		static_assert(sizeof(CandlestickA) == 32, "Member update check");
+		return ret;
+	}
+};
 
 struct KNode {
 public:
@@ -115,6 +181,14 @@ inline std::vector<double> Vs(const std::vector<Candlestick>& sticks) {
 	}
 	return std::move(vs);
 }
+inline std::vector<int64_t> Ts(const std::vector<Candlestick>& sticks) {
+	std::vector<int64_t> ts;
+	ts.resize(sticks.size());
+	for (size_t i = 0; i < sticks.size(); i++) {
+		ts[i] = sticks[i].datetime();
+	}
+	return std::move(ts);
+}
 
 inline std::vector<float> Amplitudes(const std::vector<Candlestick>& sticks) {
 	std::vector<float> ret;
@@ -148,35 +222,54 @@ inline float GetPos(float low, float high, float price) {
 	return (price - low) / (high - low);
 }
 
-inline Candlestick ToFBCandlestick(const arc::pb::Candlestick& stick) {
-	Candlestick ret;
-	ret.mutate_datetime(stick.datetime());
-	ret.mutate_open(stick.open());
-	ret.mutate_high(stick.high());
-	ret.mutate_low(stick.low());
-	ret.mutate_close(stick.close());
-	ret.mutate_volume(stick.volume());
-	return ret;
-}
+//inline Candlestick ToFBCandlestick(const arc::pb::Candlestick& stick) {
+//	Candlestick ret;
+//	ret.mutate_datetime(stick.datetime());
+//	ret.mutate_open(stick.open());
+//	ret.mutate_high(stick.high());
+//	ret.mutate_low(stick.low());
+//	ret.mutate_close(stick.close());
+//	ret.mutate_volume(stick.volume());
+//	return ret;
+//}
 
-inline std::vector<Candlestick> ToFBCandlesticks(const std::vector<arc::pb::Candlestick>& sticks) {
-	std::vector<Candlestick> ret;
-	ret.reserve(sticks.size());
-	for (auto& s : sticks)
-		ret.push_back(ToFBCandlestick(s));
-	return ret;
-}
+//inline Candlestick ToFBCandlestick(const CandlestickM& stick) {
+//	Candlestick ret;
+//	ret.mutate_datetime(std::chrono::duration_cast<std::chrono::seconds>(stick.datetime().time_since_epoch()).count());
+//	ret.mutate_open(stick.open());
+//	ret.mutate_high(stick.high());
+//	ret.mutate_low(stick.low());
+//	ret.mutate_close(stick.close());
+//	ret.mutate_volume(stick.volume());
+//	return ret;
+//}
 
-inline arc::pb::Candlestick ToPBCandlestick(const Candlestick& stick) {
-	arc::pb::Candlestick ret;
-	ret.set_datetime(stick.datetime());
-	ret.set_open(stick.open());
-	ret.set_high(stick.high());
-	ret.set_low(stick.low());
-	ret.set_close(stick.close());
-	ret.set_volume(stick.volume());
-	return ret;
-}
+//inline std::vector<Candlestick> ToFBCandlesticks(const std::vector<arc::pb::Candlestick>& sticks) {
+//	std::vector<Candlestick> ret;
+//	ret.reserve(sticks.size());
+//	for (auto& s : sticks)
+//		ret.push_back(ToFBCandlestick(s));
+//	return ret;
+//}
+
+//inline std::vector<Candlestick> ToFBCandlesticks(const std::vector<CandlestickM>& sticks) {
+//	std::vector<Candlestick> ret;
+//	ret.reserve(sticks.size());
+//	for (auto& s : sticks)
+//		ret.push_back(ToFBCandlestick(s));
+//	return ret;
+//}
+
+//inline arc::pb::Candlestick ToPBCandlestick(const Candlestick& stick) {
+//	arc::pb::Candlestick ret;
+//	ret.set_datetime(stick.datetime());
+//	ret.set_open(stick.open());
+//	ret.set_high(stick.high());
+//	ret.set_low(stick.low());
+//	ret.set_close(stick.close());
+//	ret.set_volume(stick.volume());
+//	return ret;
+//}
 
 inline std::string to_string(const Candlestick& stick) {
 	return std::to_string(stick.datetime()) + std::to_string(stick.open()) + std::to_string(stick.high()) + std::to_string(stick.low()) + std::to_string(stick.close()) + std::to_string(stick.volume());

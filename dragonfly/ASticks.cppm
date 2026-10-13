@@ -1,18 +1,20 @@
 // License: MIT License   See LICENSE.txt for the full license.
+module;
 //#define DF_MYSQL_USING
-
 #include <iostream>
 #include <map>
 #include <cassert>
 #include <vector>
+//#include <shared_mutex>
 
 #include <httplib.h>
 #ifdef DF_MYSQL_USING
 #include <mysqlx/xdevapi.h>
 #endif
+#include <SQLiteCpp/SQLiteCpp.h>
 //#include "candlesticks_generated.h"
-#include "candlestick.pb.h"
-#include "pbsqlite_copied.h"
+//#include "candlestick.pb.h"
+//#include "pbsqlite_copied.h"
 
 import arc.Candlestick;
 
@@ -35,11 +37,20 @@ inline int GetInsNumber(const std::string& id) {
 	if (id.rfind("r_", 0) == 0 || id.rfind("R_", 0) == 0) {
 		upperId = to_upper_copy(id.substr(2, id.length() - 2));
 	}
-	std::vector<std::string> ids = { "AU", "AP", "AG", "NI", "AL", "ZN", "PG", "SS", "SA", "EB", "EG", "SP", "V", "FU", "I", "RB", "RU", "BU", "JM", "J", "JD", "A", "C", "CF", "CS", "M", "MA", "ZC", "TA", "SR", "SM", "RM", "Y", "OI", "P", "PP", "HC", "L", "FG",
+	std::vector<std::string> ids = { "AU", "AP","CU", "AG","CJ", "NI", "AL", "ZN", "PG", "SS", "SA", "EB", "EG", "SP", "V", "FU", "I", "RB", "RU", "BU", "JM", "J", "JD", "A", "C", "CF", "CS", "M", "MA", "ZC", "TA", "SR", "SM", "RM", "Y", "OI", "P", "PP", "HC", "L", "FG","PB","IF","SC","SN","IH","B","SF","UR","LH"
 									 "EURUSD", "GBPUSD", "USDJPY", "USDCAD", "USDCHF", "USDCNH", "AUDUSD", "NZDUSD", "USDOLLAR"
 									 "NAS100", "CHN50", "USOIL", "COPPER", "XAUUSD", "XAGUSD", "SOYF"
 	};
 	return (int)std::distance(ids.begin(), std::find(ids.begin(), ids.end(), upperId));
+}
+
+inline std::vector<std::string> CnFuturesIds() {
+	std::vector<std::string> cnFuturesIds = { "AU", "AP","CU", "AG", "CJ","NI", "AL", "ZN", "PG", "SS", "SA", "EB", "EG", "SP", "V", "FU", "I", "RB", "RU", "BU", "JM", "J", "JD", "A", "C", "CF", "CS", "M", "MA", "ZC", "TA", "SR", "SM", "RM", "Y", "OI", "P", "PP", "HC", "L", "FG","PB","IF","SC","SN","IH","B","SF","UR","LH" };
+	std::vector<std::string> ret = cnFuturesIds;
+	for (auto& id : cnFuturesIds) {
+		ret.push_back(id + "111");
+	}
+	return ret;
 }
 
 inline InstrumentType GetInstrumentTypeById(const std::string& id) {
@@ -47,8 +58,8 @@ inline InstrumentType GetInstrumentTypeById(const std::string& id) {
 	if (id.rfind("r_", 0) == 0 || id.rfind("R_", 0) == 0) {
 		upperId = to_upper_copy(id.substr(2, id.length() - 2));
 	}
-	std::vector<std::string> cnFuturesIds = { "AU", "AP","CU", "AG", "NI", "AL", "ZN", "PG", "SS", "SA", "EB", "EG", "SP", "V", "FU", "I", "RB", "RU", "BU", "JM", "J", "JD", "A", "C", "CF", "CS", "M", "MA", "ZC", "TA", "SR", "SM", "RM", "Y", "OI", "P", "PP", "HC", "L", "FG","PB"
-	};
+	std::vector<std::string> cnFuturesIds = CnFuturesIds();
+
 	std::vector<std::string> forexIds = { "EUR/USD", "GBP/USD", "USD/JPY", "USD/CAD", "USD/CHF", "USD/CNH", "AUD/USD", "NZD/USD",
 										  "EURUSD", "GBPUSD", "USDJPY", "USDCAD", "USDCHF", "USDCNH", "AUDUSD", "NZDUSD", "USDOLLAR"
 	};
@@ -182,7 +193,7 @@ inline std::vector<Candlestick> FetchSticksFromDatabase(mysqlx::Session& sess, c
 	auto table = db.getTable(period + "_" + id_without_slash(insId));
 
 	std::vector<std::string> columnNames = { "UNIX_TIMESTAMP(datetime)", "open", "high", "low", "close", "volume" };
-	std::string condition = fmt::format("'{0}'<=datetime AND datetime<='{1}'", beginTime.ToString(), endTime.ToString());
+	std::string condition = std::format("'{}'<=datetime AND datetime<='{}'", beginTime.ToString(), endTime.ToString());
 
 	auto res = table.select(columnNames).where(condition).orderBy("datetime").execute();
 	std::list<mysqlx::Row> rows = res.fetchAll();
@@ -219,7 +230,7 @@ std::vector<char> get_data(httplib::Client& cli, std::string url) {
 	return ret;
 }
 
-class ASticks {
+class StickSeries {
 protected:
 	std::vector<Candlestick> sticks_;
 public:
@@ -255,7 +266,7 @@ public:
 		while (true) {
 			try {
 				httplib::Client cli(Config::instance().data_provider_addr(), 15000);
-				std::string url = fmt::format("/sticks/{0}/{1}?a={2}&b={3}", period, insId, beginTime.epoch(), endTime.epoch());
+				std::string url = std::format("/sticks/{}/{}?a={}&b={}", period, insId, beginTime.epoch(), endTime.epoch());
 				if (GetInstrumentTypeById(insId) == InstrumentType::ChineseFutures)
 					url = "/cnf" + url;
 				if (GetInstrumentTypeById(insId) == InstrumentType::Forex || GetInstrumentTypeById(insId) == InstrumentType::Futures)
@@ -273,7 +284,7 @@ public:
 					}
 				}
 				else {
-					log::warn("FetchFromArcSever empty will retry");
+					log::warn(insId + " " + period + " FetchFromArcSever " + Config::instance().data_provider_addr() + " empty will retry");
 					Sleep(3000);
 					continue;
 				}
@@ -292,32 +303,113 @@ public:
 		sticks_ = FetchSticksFromDatabase(sess, period, insId, beginTime, endTime);
 	}
 #endif
-	void FetchFromSQLiteDatabase(const std::string& fullfilename, Time beginTime, Time endTime) {
-		pbsqlite::Database db(fullfilename, SQLite::OPEN_READONLY);
-		std::string condition = fmt::format("WHERE datetime BETWEEN {0} AND {1} ORDER BY datetime", beginTime.epoch(), endTime.epoch());
-		std::vector<arc::pb::Candlestick> rs = db.Select<arc::pb::Candlestick>(condition);
-		sticks_ = ToFBCandlesticks(rs);
+	//void FetchFromSQLiteDatabase(const std::string& fullfilename, Time beginTime, Time endTime) {
+	//	pbsqlite::Database db(fullfilename, SQLite::OPEN_READONLY);
+	//	std::string condition = std::format("WHERE datetime BETWEEN {} AND {} ORDER BY datetime", beginTime.epoch(), endTime.epoch());
+	//	std::vector<arc::pb::Candlestick> rs = db.Select<arc::pb::Candlestick>(condition);
+	//	sticks_ = ToFBCandlesticks(rs);
+	//}
+	static std::vector<Candlestick> Select(SQLite::Database& db, const std::string& clause = "", const std::vector<int64_t>& params = {}) {
+		std::vector<Candlestick> result;
+		std::string sql = "SELECT datetime, open, high, low, close, volume FROM Candlestick " + clause + ";";
+
+		SQLite::Statement query(db, sql);
+		for (size_t i = 0; i < params.size(); ++i) {
+			query.bind(static_cast<int>(i + 1), params[i]);
+		}
+
+		while (query.executeStep()) {
+			int64_t datetime = query.getColumn(0).getInt64();
+			float open = static_cast<float>(query.getColumn(1).getDouble());
+			float high = static_cast<float>(query.getColumn(2).getDouble());
+			float low = static_cast<float>(query.getColumn(3).getDouble());
+			float close = static_cast<float>(query.getColumn(4).getDouble());
+			double volume = query.getColumn(5).getDouble();
+
+			result.emplace_back(datetime, open, high, low, close, volume);
+		}
+		return result;
 	}
+
+	// 2. FetchFromSQLiteDatabase 直接复用 Select
+	void FetchFromSQLiteDatabase(const std::string& fullfilename, Time beginTime, Time endTime) {
+		SQLite::Database db(fullfilename, SQLite::OPEN_READONLY);
+
+		// 复用 Select 函数进行区间查询
+		sticks_ = Select(db, "WHERE datetime BETWEEN ? AND ? ORDER BY datetime ASC",
+			{ static_cast<int64_t>(beginTime.epoch()), static_cast<int64_t>(endTime.epoch()) });
+	}
+
 	void FetchFromCSVContent(const std::string& csv, char delim) {
 		sticks_ = FetchSticksFromCSVContent(csv, delim);
 	}
-	void ReplaceInto(pbsqlite::Database& db) {
-		SQLite::Transaction tran(db);
-		for (auto& s : sticks()) {
-			db.exec(pbsqlite::ToInsertString(ToPBCandlestick(s), "", "REPLACE INTO"));
+	//void ReplaceInto(pbsqlite::Database& db) {
+	//	SQLite::Transaction tran(db);
+	//	for (auto& s : sticks()) {
+	//		db.exec(pbsqlite::ToInsertString(ToPBCandlestick(s), "", "REPLACE INTO"));
+	//	}
+	//	tran.commit();
+	//}
+	void ReplaceInto(SQLite::Database& db) {
+		if (sticks_.empty()) {
+			return;
 		}
-		tran.commit();
+
+		SQLite::Transaction transaction(db);
+
+		std::string sql = "REPLACE INTO Candlestick (datetime, open, high, low, close, volume) "
+			"VALUES (?, ?, ?, ?, ?, ?);";
+		SQLite::Statement query(db, sql);
+
+		for (const auto& stick : sticks_) {
+			query.bind(1, static_cast<int64_t>(stick.datetime()));
+			query.bind(2, static_cast<double>(stick.open()));
+			query.bind(3, static_cast<double>(stick.high()));
+			query.bind(4, static_cast<double>(stick.low()));
+			query.bind(5, static_cast<double>(stick.close()));
+			query.bind(6, static_cast<double>(stick.volume()));
+
+			query.exec();
+			query.reset();
+		}
+
+		transaction.commit();
 	}
+	//static void CreateTableIfNotExists(const std::string& fullfilename) {
+	//	pbsqlite::Database db(fullfilename, SQLite::OPEN_CREATE | SQLite::OPEN_READWRITE);
+	//	db.CreateTableIfNotExists(arc::pb::Candlestick(), "datetime");
+	//}
 	static void CreateTableIfNotExists(const std::string& fullfilename) {
-		pbsqlite::Database db(fullfilename, SQLite::OPEN_CREATE | SQLite::OPEN_READWRITE);
-		db.CreateTableIfNotExists(arc::pb::Candlestick(), "datetime");
+		SQLite::Database db(fullfilename, SQLite::OPEN_CREATE | SQLite::OPEN_READWRITE);
+
+		std::string sql = R"(
+        CREATE TABLE IF NOT EXISTS Candlestick (
+            datetime INTEGER PRIMARY KEY NOT NULL,
+            open     REAL    NOT NULL,
+            high     REAL    NOT NULL,
+            low      REAL    NOT NULL,
+            close    REAL    NOT NULL,
+            volume   REAL    NOT NULL
+        );
+    )";
+		db.exec(sql);
+	}
+	std::size_t sticks_md5() const {
+		std::size_t ret = fast_hash(Os(sticks()));
+		hash_combine(ret, fast_hash(Hs(sticks())));
+		hash_combine(ret, fast_hash(Ls(sticks())));
+		hash_combine(ret, fast_hash(Cs(sticks())));
+		hash_combine(ret, fast_hash(Vs(sticks())));
+		hash_combine(ret, fast_hash(Ts(sticks())));
+		return ret;
 	}
 	friend class ASticksEx;
 };
 
 
-class ASticksEx : public ASticks {
+class ASticksEx : public StickSeries {
 public:
+	//std::shared_mutex rw_mutex;
 	void Sort() {
 		std::sort(sticks_.begin(), sticks_.end(), [](const Candlestick& a, const Candlestick& b) {
 			return a.datetime() < b.datetime();
@@ -350,14 +442,14 @@ public:
 			}
 		}
 	}
-	ASticks Sub(int a, int b) const {
-		ASticks ret;
+	StickSeries Sub(int a, int b) const {
+		StickSeries ret;
 		int beginI = std::min((int)sticks().size() - 1, std::max(0, a));
 		int endI = std::min((int)sticks().size() - 1, std::max(0, b));
 		ret.sticks_ = std::vector<Candlestick>(sticks().begin() + beginI, sticks().begin() + endI + 1);
 		return ret;
 	}
-	ASticks Sub(Time a, Time b) const {
+	StickSeries Sub(Time a, Time b) const {
 		int ib = GetNearestIndex(b);
 		if (ib == -1) {
 			ib = sticks().size() - 1;

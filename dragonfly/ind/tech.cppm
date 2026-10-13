@@ -1,10 +1,12 @@
 // License: MIT License   See LICENSE.txt for the full license.
+module;
 #include <iostream>
 #include <numeric>
 #include <string>
 #include <functional>
 #include <algorithm>
 #include <vector>
+#include <deque>
 #include <map>
 #include <assert.h>
 
@@ -60,7 +62,7 @@ T MA(const std::vector<T>& data, Iter pos, unsigned int n) {
 }
 
 template<typename T>
-inline std::vector<T> MA(const std::vector<T>& data, unsigned int n) {
+inline std::vector<T> MA_Legacy(const std::vector<T>& data, unsigned int n) {
 	std::vector<T> ret;
 	if (data.empty())
 		return ret;
@@ -80,8 +82,30 @@ inline std::vector<T> MA(const std::vector<T>& data, unsigned int n) {
 		}
 		ret[i] /= n;
 	}
-	return std::move(ret);
+	return ret;
 }
+template<typename T>
+inline std::vector<T> MA_Fast(const std::vector<T>& data, unsigned int n) {
+	if (data.empty() || n == 0) return {};
+
+	size_t size = data.size();
+	std::vector<T> ret(size);
+
+	T sum = 0;
+	for (size_t i = 0; i < size; ++i) {
+		sum += data[i];
+		if (i >= n) {
+			sum -= data[i - n];
+			ret[i] = sum / n;
+		}
+		else {
+			ret[i] = sum / (i + 1);
+		}
+	}
+	return ret;
+}
+template<typename T>
+inline std::vector<T> MA(const std::vector<T>& data, unsigned int n) { return MA_Fast(data, n); }
 
 template<typename T>
 std::vector<T> SMA(const std::vector<T>& data, int N, double M) {
@@ -121,7 +145,7 @@ inline std::vector<T> REF(const std::vector<T>& data, int N) {
 }
 
 template<typename T>
-inline std::vector<T> SUM(const std::vector<T>& src, size_t n) {
+inline std::vector<T> SUM_Legacy(const std::vector<T>& src, size_t n) {
 	std::vector<T> des;
 	if (src.empty())
 		return des;
@@ -140,6 +164,23 @@ inline std::vector<T> SUM(const std::vector<T>& src, size_t n) {
 		}
 	}
 	return std::move(des);
+}
+template<typename T>
+inline std::vector<T> SUM(const std::vector<T>& src, size_t n) {
+	if (src.empty() || n == 0) return {};
+
+	size_t len = src.size();
+	std::vector<T> des(len);
+	T current_sum = 0;
+
+	for (size_t i = 0; i < len; ++i) {
+		current_sum += src[i];
+		if (i >= n) {
+			current_sum -= src[i - n];
+		}
+		des[i] = current_sum;
+	}
+	return des;
 }
 
 inline void SUM(double* des, const double* src, size_t n, size_t len) {
@@ -292,9 +333,7 @@ std::vector<T> HighValues_Classical(const std::vector<T>& data, int n) {
 }
 
 template<typename T>
-std::vector<T> HighValues(const std::vector<T>& data, int n) {
-	return HighValues_Fast(data, n);
-}
+std::vector<T> HighValues(const std::vector<T>& data, int n) { return HighValues_Fast(data, n); }
 
 template<typename T>
 std::vector<T> LowValues_Fast(const std::vector<T>& data, int n) {
